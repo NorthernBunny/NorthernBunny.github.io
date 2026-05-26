@@ -28,7 +28,7 @@ description:           >
   Personal notes on tech, art, and health.
 
 # A shorter description for the sidebar.
-tagline:               Change `tagline` in `_config.yml`
+tagline:               "Notes on a home lab, traditional painting, and the search for truth." 
 
 # A list of keywords for your blog
 keywords:              []
@@ -41,18 +41,21 @@ logo:                  /assets/img/logo.png
 # This should be the same author as first entry in `_data/authors.yml`.
 author:
   # Used by `jekyll-feed`:
-  name:                The Northern Buny 
-  email:               thenorthernbunny@proton.me 
+  name:                "The Northern Bunny" 
+  email:               "thenorthernbunny@proton.me" 
+  bio:		       "A digital garden documenting my home lab tech projects, artistic endeavors and health journey."
   # # Used by `jekyll-seo-tag`:
   # twitter:             <username>
 
 # Add links to the sidebar.
 menu:
-  - title:             Example
-    url:               "https://thenorthernbunny.com" 
-  - title:             Documentation
-    url:               /docs/
-  - title:             About
+  - title:             Tech Notes
+    url:               /category/tech/ 
+  - title:             Art Gallery
+    url:               /category/art/
+  - title:             Health Journey 
+    url:               /category/health
+  - title:             About 
     url:               /about/
 
 # Add links to the footer.
@@ -66,7 +69,7 @@ legal:
     url:               /CHANGELOG/
 
 # This text will appear in a `<small>` tag in the footer of every page.
-copyright:             © 2024. All rights reserved.
+copyright:             © 2026. All rights reserved.
 
 # Format of the permalinks
 permalink:             /:categories/:year-:month-:day-:title/
@@ -355,11 +358,11 @@ plugins:
 #   admins:              <id>
 
 # Used on index and about sites
-# social:
-#   name:                <firstname> <lastname>
-#   links:
+ social:
+   name:                TheNorthernBunny
+   links:
 #     - https://twitter.com/<username>
-#     - https://github.com/<username>
+     - https://github.com/thenorthernbunny
 
 
 # Plugin Configs
