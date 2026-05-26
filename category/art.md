@@ -1,7 +1,7 @@
-Markdown
+YAML
 ---
 layout: blog
-title: Art Gallery
+title: "Art Gallery"
 category: art
 permalink: /category/art/
 ---
