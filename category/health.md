@@ -1,7 +1,8 @@
-YAML
 ---
-layout: blog
-title: "Health Journey"
-category: health
-permalink: /category/health/
+layout: list
+title: Health Notes
+slug: tech
+description: >
+  Notes on health.
 ---
+
