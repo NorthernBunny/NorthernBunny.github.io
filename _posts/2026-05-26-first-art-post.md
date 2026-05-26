@@ -9,18 +9,18 @@ Decided to start a personal site. Figured I would learn some stuff by doing it, 
 
 Painting #1
 
-![test first health image](/assets/img/posts/painting1.jpeg)
+![test first health image](/assets/img/posts/painting1.jpg)
 
 Painting #2
 
-![test first health image](/assets/img/posts/painting2.jpeg)
+![test first health image](/assets/img/posts/painting2.jpg)
 
 Painting #3
 
-![test first health image](/assets/img/posts/painting3.jpeg)
+![test first health image](/assets/img/posts/painting3.jpg)
 
 Painting #4
 
-![test first health image](/assets/img/posts/painting4.jpeg) 
+![test first health image](/assets/img/posts/painting4.jpg) 
 
 
