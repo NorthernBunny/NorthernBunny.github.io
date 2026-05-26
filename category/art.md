@@ -1,7 +1,7 @@
-YAML
 ---
-layout: blog
-title: "Art Gallery"
-category: art
-permalink: /category/art/
+layout: list
+title: Art Notes
+slug: art
+description: >
+  My art notes.
 ---
