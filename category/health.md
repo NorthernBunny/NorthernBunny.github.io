@@ -1,7 +1,7 @@
 ---
 layout: list
 title: Health Notes
-slug: tech
+slug: health
 description: >
   Notes on health.
 ---
