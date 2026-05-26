@@ -20,12 +20,11 @@
 lang:                  en
 
 # The title of your blog. Used in the sidebar and the browser tab.
-title:                 The Northern Bunny 
+title:                 "The Northern Bunny" 
 
 # A short description (~150 chars) of the page used for the meta description tag.
 # Can use markdown, but no more than one paragraph (enforced by `>`)
-description:           >
-  Personal notes on tech, art, and health.
+description:           "Personal notes on tech, art, and health."           
 
 # A shorter description for the sidebar.
 tagline:               "Notes on a home lab, traditional painting, and the search for truth." 
@@ -43,7 +42,7 @@ author:
   # Used by `jekyll-feed`:
   name:                "The Northern Bunny" 
   email:               "thenorthernbunny@proton.me" 
-  bio:		       "A digital garden documenting my home lab tech projects, artistic endeavors and health journey."
+  bio:                 "A digital garden documenting my home lab tech projects, artistic endeavors and health journey."
   # # Used by `jekyll-seo-tag`:
   # twitter:             <username>
 
@@ -358,11 +357,11 @@ plugins:
 #   admins:              <id>
 
 # Used on index and about sites
- social:
+social:
    name:                TheNorthernBunny
    links:
 #     - https://twitter.com/<username>
-     - https://github.com/thenorthernbunny
+     - https://github.com/NorthernBunny
 
 
 # Plugin Configs
