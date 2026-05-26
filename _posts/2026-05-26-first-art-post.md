@@ -21,6 +21,6 @@ Painting #3
 
 Painting #4
 
-![test first health image](/assets/img/posts/painting4.jpeg)
+![test first health image](/assets/img/posts/painting4.jpeg) 
 
 
