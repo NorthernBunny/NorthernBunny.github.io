@@ -1,7 +1,7 @@
-Markdown
+YAML
 ---
 layout: blog
-title: Tech Notes
+title: "Tech Notes"
 category: tech
 permalink: /category/tech/
 ---
