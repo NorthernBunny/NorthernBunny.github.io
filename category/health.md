@@ -1,7 +1,7 @@
-Markdown
+YAML
 ---
 layout: blog
-title: Health Journey
+title: "Health Journey"
 category: health
 permalink: /category/health/
 ---
