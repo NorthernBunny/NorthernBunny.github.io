@@ -7,7 +7,7 @@ categories: [tech]
 Decided to start a personal site. Figured I would learn some stuff by doing it, which I already have! It is to be a place to document personal projects I am working on. So with that, I will describe the process of getting the site going.
 
 ### The Architecture: Keeping Costs Low
-First thing was to do some research to make this project as cheap as possible, since it's just a personal endeavor. I could have decided to use something like the free version of WordPress, Google Blogs, or Notion, but decided for now to register my domain with a registrar, use Cloudflare's free tier as my DNS, and host my actual pages on GitHub for free. 
+First thing was to do some research to make this project as cheap as possible, since it's just a personal endeavor. I could have decided to use something like the free version of WordPress, Google Blogs, or Notion, but decided for now to register my domain with a registrar, use Cloudflare's free tier as my DNS, and host my actual pages on GitHub for free. So this website will cose 7 dollars for the first year, and 20 dollars per year after that.  
 
 ### 1. The Registrar (Namecheap)
 To choose the registrar, I just did some comparative shopping and settled on Namecheap. So that is \$6.99 for 1 year, and will renew at maybe \$20 per year after that. Pretty good, and they give free WHOIS privacy protection, called WhoisGuard. Remember to push the slider for WhoisGuard to enabled for the domains you register. Disable things that they offer for a free trial, like custom DNS services, so that they don't auto-renew and charge later. All in all, it was a very simple process. I chose *The Northern Bunny* because I live in Canada, and I think bunnies are pretty cute. 
