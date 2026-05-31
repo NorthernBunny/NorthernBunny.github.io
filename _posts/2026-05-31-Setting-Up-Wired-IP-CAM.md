@@ -4,15 +4,15 @@ title: "Installing a Wired IP Camera: Overcoming the DIY Learning Curve"
 categories: [tech]
 ---
 
-I have always wanted to try a wired IP camera. Having exclusively used wireless ones in the past, I frequently wondered if doing the extra grunt work to install a hardwired line would truly be worth the effort. 
+I have always wanted to try a wired outdoor IP camera. I use a few wireless indoor cams. I have often wondered if doing the extra work to install a wired one outdoors would be worth the extra effort. 
 
-I finally decided on the **Reolink RLC-811A PoE camera**. It delivers a crisp 4K stream and features a robust mobile app to keep things simple out of the box. Crucially for me, it also plays nice with open-source protocols, meaning I can directly integrate the raw stream into my home automation system later on. It also features an onboard microSD slot for local storage, allowing me to completely bypass paying a monthly subscription fee just to access my own footage in someone else's cloud. 
+First I needed to research an affordable outdoor wired IP camera. I wanted something with good weatherproofing, a good operating temperature range, 4K, good optics, optical zoom, a microSD card slot, a decent app so it would work right away, but also the ability to integrate with open-source systems like Home Assistant. I finally decided on the **Reolink RLC-811A PoE camera**. It features 5x optical zoom, 8MP 4K resolution, person/vehicle/animal detection, time-lapse recording, color night vision, a microSD slot (max 512GB), an IP67 rating, a -10°C to 55°C (14°F to 131°F) temperature range, 802.3af PoE, and a 10/100Mbps single RJ45 Ethernet port. 
 
-I managed to snag the Reolink on Amazon on sale for $140 CAD. Next up was local storage. After some digging, I picked up a **SanDisk High Endurance 256GB microSDXC card** for $80 CAD. Standard gaming or phone cards will quickly burn out under the relentless pressure of a 4K loop-recording surveillance stream. You need a dedicated endurance card with specialized firmware that can handle constant write cycles and survive the punishing seasonal swings of Canadian winters and summers.
+I bought the Reolink on Amazon on sale for $140 CAD. I also bought a **SanDisk High Endurance 256GB microSDXC card** for $80 CAD. Standard microSD cards will quickly burn out under the constant writes from a 4K loop-recording video stream, as well as from harsh outdoor conditions like heat, cold, temperature fluctuations, and UV rays. I learned there are dedicated microSD cards, like the SanDisk Endurance card, with specialized firmware that can handle constant write cycles and survive the punishing seasonal swings of Canadian winters and summers.
 
-One of the best features of this hardware is Power over Ethernet (PoE), which allows the camera to receive data and power over a single ethernet cable. I already had a small **TP-Link PoE switch** sitting in my home lab, so I put it to work for this project. The architecture is straightforward: connect the camera to the PoE switch, and then bridge the switch into your main network. 
+One of the best features of this hardware is Power over Ethernet (PoE), which allows the camera to receive data and power over a single Ethernet cable. I already had a small **TP-Link PoE switch** sitting in my home lab, so I put it to work for this project. The architecture is straightforward: connect the camera to the PoE switch, and then bridge the switch into your main network. 
 
-During my research, I learned that standard interior ethernet cables will quickly crack and fail outdoors due to moisture and sunlight. To prevent this, I bought a **100-foot GearIT Cat6 Outdoor Pure Copper (OFC) cable**, which features a heavy-duty LLDPE waterproof jacket and excellent UV protection. I measured the physical run from my switch to the corner mounting spot at roughly 70 feet, so buying a pre-terminated 100-foot line gave me a perfect amount of slack to work with.
+During my research, I learned that standard interior Ethernet cables will quickly crack and fail outdoors due to moisture and sunlight. To prevent this, I bought a **100-foot GearIT Cat6 Outdoor Pure Copper (OFC) cable**, which features a heavy-duty LLDPE waterproof jacket and excellent UV protection. I measured the physical run from my switch to the corner mounting spot at roughly 70 feet, so buying a pre-terminated 100-foot line gave me a perfect amount of slack to work with.
 
 Before climbing any ladders, I plugged the camera directly into the TP-Link switch on my workbench using the 100-foot GearIT cable just to ensure the firmware booted and the network link was stable. 
 
@@ -20,5 +20,4 @@ With the bench test passed, it was time for the hardest part: getting the line o
 
 To clean up the aesthetics, I am currently tucking the cable run beneath the vinyl siding track using **7mm Coaxial Nail Clips** to anchor it out of sight, and I am using clear **Command Outdoor Window Clips** to hold the wire perfectly flush inside the window frame. 
 
-The camera is officially live, the 4K local playback timeline is working flawlessly, and I’ve already kicked off my very first weather time-lapse!
-
+So at this point, the camera is officially live, the 4K local playback is working well, and I’ve already kicked off my very first weather time-lapse! The question is, after spending about $400, and executing substantially more effort than deploying a wireless indoor, or even a wireless outdoor camera, is it worth it?
