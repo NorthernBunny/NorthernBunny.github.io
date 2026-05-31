@@ -4,11 +4,12 @@ title: "Installing a Wired Outdoor POE IP Camera: Overcoming the DIY Learning Cu
 categories: [tech]
 ---
 
-I have often wondered if doing the extra work to install a wired outdoor IP camera wwould offer better results than a simpler wireless indoor one.
+I have often wondered if doing the extra work to install a wired outdoor IP camera would offer better results than a simpler wireless indoor one.
 
 First I needed to research an affordable outdoor wired IP camera. I wanted something at a reasonable price, with good weatherproofing, a good operating temperature range, 4K, good optics, optical zoom, a microSD card slot, a decent app so it would work right away, but also the ability to integrate with open-source systems like Home Assistant. I finally decided on the **Reolink RLC-811A PoE camera**. It features 5x optical zoom, 8MP 4K resolution, person/vehicle/animal detection, time-lapse recording, color night vision, a microSD slot (max 512GB), an IP67 rating, a -10°C to 55°C (14°F to 131°F) temperature range, 802.3af PoE, and a 10/100Mbps single RJ45 Ethernet port. 
+Found it on Amazon on sale for $140 CAD. 
 
-I bought the Reolink on Amazon on sale for $140 CAD. I also bought a **SanDisk High Endurance 256GB microSDXC card** for $80 CAD. Standard microSD cards will quickly burn out under the constant writes from a 4K loop-recording video stream, as well as from harsh outdoor conditions like heat, cold, temperature fluctuations, and UV rays. I learned there are dedicated microSD cards, like the SanDisk Endurance card, with specialized firmware that can handle constant write cycles and survive the punishing seasonal swings of Canadian winters and summers.
+Next, I needed a microSD card so that I could keep some footage locally. After some research, I found that a standard microSD card could fail under the constant writes from a 4K loop-recording video stream, as well as from harsh outdoor conditions like heat, cold, temperature fluctuations, and UV rays. Apparently there are specialized microSD cards for outdoor cams. Based on price and size, I settled on the **SanDisk High Endurance 256GB microSDXC card** for $79 CAD at Best Buy. This one should handle about 3 days of capture. 
 
 One of the best features of this hardware is Power over Ethernet (PoE), which allows the camera to receive data and power over a single Ethernet cable. I already had a small **TP-Link PoE switch** sitting in my home lab, so I put it to work for this project. The architecture is straightforward: connect the camera to the PoE switch, and then bridge the switch into your main network. 
 
