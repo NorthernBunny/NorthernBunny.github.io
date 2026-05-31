@@ -4,7 +4,7 @@ title: "Installing a Wired Outdoor POE IP Camera: Overcoming the DIY Learning Cu
 categories: [tech]
 ---
 
-I have always wanted to try a wired outdoor IP camera. I use a few wireless indoor cams. I have often wondered if doing the extra work to install a wired one outdoors would be worth the extra effort. 
+I have often wondered if doing the extra work to install a wired outdoor IP camera wwould offer better results than a simpler wireless indoor one.
 
 First I needed to research an affordable outdoor wired IP camera. I wanted something at a reasonable price, with good weatherproofing, a good operating temperature range, 4K, good optics, optical zoom, a microSD card slot, a decent app so it would work right away, but also the ability to integrate with open-source systems like Home Assistant. I finally decided on the **Reolink RLC-811A PoE camera**. It features 5x optical zoom, 8MP 4K resolution, person/vehicle/animal detection, time-lapse recording, color night vision, a microSD slot (max 512GB), an IP67 rating, a -10°C to 55°C (14°F to 131°F) temperature range, 802.3af PoE, and a 10/100Mbps single RJ45 Ethernet port. 
 
