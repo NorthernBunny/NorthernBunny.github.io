@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Installing a Wired IP Camera: Overcoming the DIY Learning Curve"
+title: "Installing a Wired Outdoor POE IP Camera: Overcoming the DIY Learning Curve"
 categories: [tech]
 ---
 
