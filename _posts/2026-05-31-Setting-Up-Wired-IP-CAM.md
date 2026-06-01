@@ -28,6 +28,12 @@ I screwed the Reolink into the deck under the soffit for some extra weather prot
 
 ![reolink_installed](/assets/img/posts/reolink_installed.jpg)
 
+Next I connected the waterproof kit and plugged in the ethernet. Had to remove the plastic bit covering the rj-45 ethernet end to get it to fit. The ethernet cable is thicker than normal, so had a little issue with that, the fit was very tight. 
+
+![reolink_waterprf_kit](/assets/img/posts/reolink_waterprf_kit.jpg)
+
+![reolink_rm_eth_hat](/assets/img/posts/reolink_rm_eth_hat.jpg)
+
 Next, I tucked the cable run beneath the vinyl siding track using **7mm Coaxial Nail Clips** to anchor it out of sight, and I am using clear **Command Outdoor Window Clips** to hold the wire perfectly flush inside the window frame. 
 
 ![reolink_cbl_mgmt](/assets/img/posts/reolink_cbl_mgmt.jpg)
