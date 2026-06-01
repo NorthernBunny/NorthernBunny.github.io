@@ -1,4 +1,3 @@
-Markdown
 ---
 layout: post
 title: "My First Art Post: Embracing the Challenge of Acrylic Painting"
