@@ -19,10 +19,7 @@ Before installing, I plugged the camera directly into the TP-Link switch on a be
 
 ![reolink_testing_pre_install](/assets/img/posts/reolink_testing_preinstall.jpg)
 
-
 With the bench test passed, it was time for the hardest part: getting the line outside. I thought I had a long masonry drill bit on hand, but right before boring into the wall, I realized it wasn't nearly deep enough to clear the exterior wall cavity. Instead of buying a longer drill bit, I decided to drill through a corner of a vinyl window which is right next to my PoE switch and main home switch. I drilled two holes right next to each other with the bit I had so the RJ45 end could pass through. I removed the plastic cover around the head of the Ethernet RJ45 end so that it was smaller and could run through the hole. Then I sealed the entry point using **GE Silicone II** waterproof sealant. 
-
-
 
 ![reolink_window_hole](/assets/img/posts/reolink_window_hole.jpg)
 
@@ -30,7 +27,7 @@ I screwed the Reolink into the deck under the soffit for some extra weather prot
 
 ![reolink_installed](/assets/img/posts/reolink_installed.jpg)
 
-Next I connected the waterproof kit and plugged in the ethernet. Had to remove the plastic bit covering the rj-45 ethernet end to get it to fit. The ethernet cable is thicker than normal, so had a little issue with that, the fit was very tight. 
+Next, I connected the waterproof kit and plugged in the Ethernet. I had to remove the plastic bit covering the RJ45 Ethernet end to get it to fit. The Ethernet cable is thicker than normal, so I had a little issue with that—the fit was very tight. 
 
 ![reolink_waterprf_kit](/assets/img/posts/reolink_waterprf_kit.jpg)
 
@@ -44,31 +41,20 @@ Next, I tucked the cable run beneath the vinyl siding track using **7mm Coaxial 
 
 ![reolink_cbl_mgmt_3](/assets/img/posts/reolink_cbl_mgmt_3.jpg)
 
+This project turned out to be more work and cost than I expected at the beginning. I wasn't expecting to pay more for things like fancy outdoor Ethernet, a high-performance SD card, specialized clips, sealant, and potentially a long drill bit. At this point, the camera is officially live, the 4K local playback is working well, and I’ve already kicked off my very first time-lapse! 
 
-This project turned out to be more work and cost than I expected at the beginning. I wasn't expecting to pay more for things like fancy outdoor Ethernet, a high-performance SD card, specialized clips, sealant, and potentially a long drill bit. At this point, the camera is officially live, the 4K local playback is working well, and I’ve already kicked off my very first time-lapse! The question is, after spending about $400, and executing substantially more effort than deploying a wireless indoor, or even a wireless outdoor camera, was it worth it?
+The question is, after spending about $400, and executing substantially more effort than deploying a wireless indoor, or even a wireless outdoor camera, was it worth it?
 
-I plugged a laptop into the tp link and did a ~10k ping packet test to the wired Reolink and my wireless 2k tapo wireless 2.4Ghz cam. 
+To test it out, I plugged a laptop directly into the TP-Link switch and ran a ~10k ping packet benchmark to both the wired Reolink and my wireless 2K Tapo camera running on a 2.4GHz Wi-Fi link. 
 
-// Wired
+```text
+// Wired Reolink 4K Cam
+round-trip min/avg/max/stddev = 1.109/2.621/25.400/1.237 ms
 
-Average Latency: 2.621 ms
+// Wireless Tapo 2K Cam
+round-trip min/avg/max/stddev = 1.992/4.799/77.003/4.556 ms
+The data shows that the wired line is clearly better. Because of these tighter metrics, the wired stream is going to avoid pixelation, frame drops, stutter, and buffering much more effectively than a wireless setup. You could argue that the Tapo is older and that you could get a newer camera running high-end Wi-Fi 6 or Wi-Fi 7 chipsets on 5GHz or 6GHz, find the best channel, tune the network configuration specifically for that client, and improve performance. But at the end of the day, a wired connection simply gives you a simpler connection with guaranteed, reliable characteristics out of the box. Wi-Fi can be good, but it is fundamentally more complicated, and things are always subject to change in a shared wireless environment.
 
-Standard Deviation (stddev): 1.237 ms
+Besides the data metrics, physical differences matter too. Having a camera mounted permanently outside keeps your interior spaces completely clean—you don't have to worry about managing cables indoors or accidentally knocking the camera over on a windowsill. Furthermore, infrared (IR) night vision does not work well if you try to point an indoor camera out through a pane of glass. The IR illumination just bounces directly off the glass surface, blinding the camera and preventing you from seeing anything outside.
 
-Max Spike: 25.400 ms
-
-// Wireless
-
-Average Latency: 4.799 ms
-
-Standard Deviation (stddev): 4.556 ms
-
-Max Spike: 77.003 ms
-
-So the wired is better, and is going to avoid pixelation, frame drops, stutter, and buffering more than the wireless. Could argue that the tapo is older, could get a cam with a very good wifi 6 or even 7, 5Ghz or 6Ghz, choose the best channel, tune for the client etc, but at the end of the day the wired connection is going to give a simpler connection with reliable characteristics. The wifi could be just as good, but it is more complicated, and things can change in a wireless environment. 
-
-Besides the physical connection, have something mounted permanently outside somewhere keeps the interior space clean, don't need to worry about cables inside, knocking over the camera etc. Also the IR night vision will not work well if you have an indoor camera looking through a pain of glass. The IR illuminations just reflects off the glass, you will not see outside. 
-
-So at the end of the day can say I learned from this project, and hope you enjoyed reading this post :)
-
-
+So at the end of the day, I learned a lot from executing this project, and I hope you enjoyed reading about the process!
