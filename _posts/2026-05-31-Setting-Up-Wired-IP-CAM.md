@@ -47,12 +47,12 @@ The question is, after spending about $400, and executing substantially more eff
 
 To test it out, I plugged a laptop directly into the TP-Link switch and ran a ~10k ping packet benchmark to both the wired Reolink and my wireless 2K Tapo camera running on a 2.4GHz Wi-Fi link. 
 
-```text
 // Wired Reolink 4K Cam
 round-trip min/avg/max/stddev = 1.109/2.621/25.400/1.237 ms
 
 // Wireless Tapo 2K Cam
 round-trip min/avg/max/stddev = 1.992/4.799/77.003/4.556 ms
+
 The data shows that the wired line is clearly better. Because of these tighter metrics, the wired stream is going to avoid pixelation, frame drops, stutter, and buffering much more effectively than a wireless setup. You could argue that the Tapo is older and that you could get a newer camera running high-end Wi-Fi 6 or Wi-Fi 7 chipsets on 5GHz or 6GHz, find the best channel, tune the network configuration specifically for that client, and improve performance. But at the end of the day, a wired connection simply gives you a simpler connection with guaranteed, reliable characteristics out of the box. Wi-Fi can be good, but it is fundamentally more complicated, and things are always subject to change in a shared wireless environment.
 
 Besides the data metrics, physical differences matter too. Having a camera mounted permanently outside keeps your interior spaces completely clean—you don't have to worry about managing cables indoors or accidentally knocking the camera over on a windowsill. Furthermore, infrared (IR) night vision does not work well if you try to point an indoor camera out through a pane of glass. The IR illumination just bounces directly off the glass surface, blinding the camera and preventing you from seeing anything outside.
