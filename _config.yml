@@ -20,7 +20,7 @@
 lang:                  en
 
 # The title of your blog. Used in the sidebar and the browser tab.
-title:                 "The Northern Bunny" 
+# title:                 "The Northern Bunny" 
 
 # A short description (~150 chars) of the page used for the meta description tag.
 # Can use markdown, but no more than one paragraph (enforced by `>`)
@@ -51,9 +51,9 @@ author:
 menu:
   - title:             Tech Notes
     url:               /category/tech/ 
-  - title:             Art Gallery
+  - title:             Art Notes
     url:               /category/art/
-  - title:             Health Journey 
+  - title:             Health Notes
     url:               /category/health
   - title:             About 
     url:               /about/
