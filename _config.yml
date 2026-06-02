@@ -41,7 +41,7 @@ logo:                  none
 # This should be the same author as first entry in `_data/authors.yml`.
 author: 
   # Used by `jekyll-feed`:
-  name:                "The Northern Bunny" 
+  name:                " " 
   email:               "thenorthernbunny@proton.me" 
   bio:                 "A digital garden documenting my home lab tech projects, artistic endeavors and health journey."
   # # Used by `jekyll-seo-tag`:
