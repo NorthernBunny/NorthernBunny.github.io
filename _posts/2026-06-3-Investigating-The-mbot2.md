@@ -22,3 +22,17 @@ I ran into a strange hardware issue where the robot would not drive straight—i
 * Attempted to use specific encoder motor commands to manually adjust the RPMs to compensate.
 
 Unfortunately, nothing fixed the drift. I took it back to the library tech, who validated that it was behaving strangely and swapped it for another unit. The replacement is working normally!
+
+### Identifying Images
+
+Followed some instructions to:
+
+* add sprite extensions, Machine Learning, Cognitive Services, User Cloud Message and Teachable Machine
+* train a model to recognize yellow as happy, red as angry, and blue as sad
+* use makeblock to recognize colors using the camera on my macbook and depending on recognized color to send the corelating message, happy, angry or sad to the cloud ?
+* added device extensions, AI Emoji Workshop and AI Emoji
+* created emojis for happy, sad, angry
+* mbot2 connects to wifi, says hi, and waits for msg
+* mbot2 plays appropriate happy, sad, angry sound and displays appropriate emoji
+
+Worked well. Pretty incredible that this is possible with such minimal effort !
