@@ -28,3 +28,6 @@ It is a demanding but highly rewarding process. Here are the first five painting
 
 ### Painting #5
 ![Painting 5](/assets/img/posts/painting5.jpg)
+
+### Painting #y
+![Painting 5](/assets/img/posts/painting6.jpg)
