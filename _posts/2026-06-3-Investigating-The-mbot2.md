@@ -28,11 +28,28 @@ Unfortunately, nothing fixed the drift. I took it back to the library tech, who 
 Followed some instructions to:
 
 * add sprite extensions, Machine Learning, Cognitive Services, User Cloud Message and Teachable Machine
+
+![mblock_ide](/assets/img/posts/makeblock_ide_image_sprite_extensions.jpg)
+
 * train a model to recognize yellow as happy, red as angry, and blue as sad
+
+![mblock_ide](/assets/img/posts/makeblock_ide_image_model_training.jpg)
+
 * use makeblock to recognize colors using the camera on my macbook and depending on recognized color to send the corelating message, happy, angry or sad to the cloud ?
+
+![mblock_ide](/assets/img/posts/makeblock_ide_image_sprites.jpg)
+
 * added device extensions, AI Emoji Workshop and AI Emoji
+
+![mblock_ide](/assets/img/posts/makeblock_ide_image_device_extensions.jpg)
+
 * created emojis for happy, sad, angry
-* mbot2 connects to wifi, says hi, and waits for msg
-* mbot2 plays appropriate happy, sad, angry sound and displays appropriate emoji
+
+![mblock_ide](/assets/img/posts/makeblock_ide_image_emoji.jpg)
+
+* mbot2 connects to wifi, says hi, and waits for msg, and then plays appropriate happy, sad, angry sound and displays appropriate emoji
+
+![mblock_ide](/assets/img/posts/makeblock_ide_image_devices.jpg)
+
 
 Worked well. Pretty incredible that this is possible with such minimal effort !
