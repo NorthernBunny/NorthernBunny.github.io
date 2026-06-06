@@ -4,16 +4,21 @@ title: "Fun with mBot2"
 categories: [tech]
 ---
 
- Borrowed an mBot2 from the local library :) Cool little robot kit from Makeblock. 
+Borrowed an mBot2 from the local library :) Cool little robot kit from Makeblock. 
 
- 
 ![mbot2_photos](/assets/img/posts/mbot2.jpg)
 
-
-  You can go to https://ide.mblock.cc/ , connect live to the mBot2 via bluetooth, and enter a simple program using drag and drop block-based programming or with python. Click on the "when CyberPi starts up" and it will say hi, switch the led display to the colors shown, and move forwards. 
+You can go to [ide.mblock.cc](https://ide.mblock.cc/), connect live to the mBot2 via Bluetooth, and enter a simple program using drag-and-drop block-based programming or Python. Click on the "when CyberPi starts up" block and it will say hi, switch the LED display to the colors shown, and move forward. 
 
 ![mblock_ide](/assets/img/posts/mblock_ide.jpg)
 
- Had a strange issue where the robot would not go straight. Would always turn to the right. One of the wheels was turning more than the other. I tried flipping the 2 EM1 and EM2 motor connectors, tried updating the firmware, resetting the system to factory, tried to use a specific enable motor cmds to make one move at a higer rpm than the other, but could not get it to work. Took it back to the tech at the library, he validated that it was behaving strangely. So swapped for another one, and it is working normally. 
+### Troubleshooting a Drifting Robot
 
- 
+I ran into a strange hardware issue where the robot would not drive straight—it consistently drifted to the right because one wheel was spinning faster than the other. Before giving up, I tried a few troubleshooting steps:
+
+* Flipped the EM1 and EM2 motor connectors.
+* Updated the firmware.
+* Reset the system to factory defaults.
+* Attempted to use specific encoder motor commands to manually adjust the RPMs to compensate.
+
+Unfortunately, nothing fixed the drift. I took it back to the library tech, who validated that it was behaving strangely and swapped it for another unit. The replacement is working normally!
