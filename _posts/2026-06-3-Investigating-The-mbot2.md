@@ -23,33 +23,32 @@ I ran into a strange hardware issue where the robot would not drive straight—i
 
 Unfortunately, nothing fixed the drift. I took it back to the library tech, who validated that it was behaving strangely and swapped it for another unit. The replacement is working normally!
 
-### Identifying Images
+### Getting Into AI: Image Recognition & Cloud Messaging
 
-Followed some instructions to:
+With a fully functioning robot, I decided to push the software a bit further and experiment with its AI and cloud capabilities. I wanted to see if I could use my MacBook's camera to recognize a color, classify an emotion, and have the mBot2 react accordingly. 
 
-* add sprite extensions, Machine Learning, Cognitive Services, User Cloud Message and Teachable Machine
+First, I jumped into the Stage/Sprite side of mBlock and loaded up the necessary extensions: **Machine Learning**, **Cognitive Services**, **User Cloud Message**, and **Teachable Machine**.
 
 ![mblock_ide](/assets/img/posts/makeblock_ide_image_sprite_extensions.jpg)
 
-* train a model to recognize yellow as happy, red as angry, and blue as sad
+Using the Teachable Machine extension, I trained a quick vision model right in the browser to associate different colored cards with specific emotions: yellow for happy, red for angry, and blue for sad.
 
 ![mblock_ide](/assets/img/posts/makeblock_ide_image_model_training.jpg)
 
-* use makeblock to recognize colors using the camera on my macbook and depending on recognized color to send the corelating message, happy, angry or sad to the cloud ?
+With the model trained, I entered a brief script for the Stage Sprite. It uses my MacBook’s webcam to continuously scan for colors. Once a color is recognized, it fires the corresponding emotional message ("happy", "angry", or "sad") up to the Makeblock cloud using MQTT cloud messaging.
 
 ![mblock_ide](/assets/img/posts/makeblock_ide_image_sprites.jpg)
 
-* added device extensions, AI Emoji Workshop and AI Emoji
+Next, I needed to configure the mBot2 to listen for those messages. On the Device side, I added the **AI Emoji Workshop** and **AI Emoji** extensions.
 
 ![mblock_ide](/assets/img/posts/makeblock_ide_image_device_extensions.jpg)
 
-* created emojis for happy, sad, angry
+I used the matrix editor to design custom pixel-art emojis matching the three target emotions.
 
 ![mblock_ide](/assets/img/posts/makeblock_ide_image_emoji.jpg)
 
-* mbot2 connects to wifi, says hi, and waits for msg, and then plays appropriate happy, sad, angry sound and displays appropriate emoji
+Finally, I coded the CyberPi to connect to my home Wi-Fi on boot. It says hello, subscribes to the cloud message topic, and waits. The moment I hold a color up to my laptop camera, the robot instantly plays a matching sound effect and flashes the corresponding custom emoji on its display.
 
 ![mblock_ide](/assets/img/posts/makeblock_ide_image_devices.jpg)
 
-
-Worked well. Pretty incredible that this is possible with such minimal effort !
+The whole pipeline worked flawlessly. It is honestly pretty incredible how much advanced tech—computer vision, cloud IoT messaging, and hardware control—you can string together with such minimal effort using these tools!
