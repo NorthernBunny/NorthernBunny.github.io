@@ -30,7 +30,7 @@ It is a demanding but highly rewarding process. Here are the first five painting
 ![Painting 5](/assets/img/posts/painting5.jpg)
 
 ### Painting #6
-![Painting 5](/assets/img/posts/painting6.jpg)
+![Painting 6](/assets/img/posts/painting6.jpg)
 
 ### Painting #7
-![Painting 5](/assets/img/posts/painting7.jpg)
+![Painting 7](/assets/img/posts/painting7.jpg)
