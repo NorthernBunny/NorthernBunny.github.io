@@ -1,0 +1,158 @@
+---
+layout: none
+permalink: /art-app/
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Art Institute of Chicago Gallery</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body, html {
+      width: 100%; height: 100%;
+      background-color: #000000; color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden; display: flex; flex-direction: column;
+      justify-content: space-between; align-items: center;
+    }
+    #stage {
+      position: relative; width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      cursor: pointer;
+    }
+    #art-image {
+      max-width: 100%; max-height: 78vh;
+      object-fit: contain; transition: opacity 0.3s ease-in-out;
+      opacity: 0;
+    }
+    #art-image.loaded { opacity: 1; }
+    #info-panel {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.9) 40%);
+      padding: 16px 12px 20px; text-align: center;
+    }
+    .title { font-size: 1rem; font-weight: 600; margin-bottom: 2px; line-height: 1.2; }
+    .artist { font-size: 0.85rem; font-style: italic; color: #b0b0b0; margin-bottom: 8px; }
+    .controls-hint { font-size: 0.7rem; color: #666666; letter-spacing: 0.5px; text-transform: uppercase; }
+    #status-badge {
+      position: absolute; top: 12px; right: 12px;
+      background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; color: #cccccc;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage" onclick="handleTap(event)">
+    <div id="status-badge">10s Cycle</div>
+    <img id="art-image" alt="Artwork" />
+    <div id="info-panel">
+      <div id="title" class="title">Loading Gallery...</div>
+      <div id="artist" class="artist">Connecting to Art Institute of Chicago</div>
+      <div class="controls-hint">Tap Left: Prev | Tap Center: Pause | Tap Right: Next</div>
+    </div>
+  </div>
+
+  <script>
+    const CATEGORIES = ["Painting", "Print", "Sculpture", "Drawing", "Photograph", "Textile", "Ceramics", "Japanese", "Modern Art", "Impressionism"];
+    let intervalSeconds = 10;
+    let timer = null;
+    let isPaused = false;
+    
+    const historyStack = [];
+    let historyIndex = -1;
+
+    const imgEl = document.getElementById('art-image');
+    const titleEl = document.getElementById('title');
+    const artistEl = document.getElementById('artist');
+    const badgeEl = document.getElementById('status-badge');
+
+    async function fetchRandomArtwork() {
+      const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+      const page = Math.floor(Math.random() * 20) + 1;
+      const url = `https://api.artic.edu/api/v1/artworks/search?q=${category}&query[term][is_public_domain]=true&fields=id,title,artist_display,image_id&limit=20&page=${page}`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const iiifBaseUrl = data.config?.iiif_url || "https://lakecountypress.com/iiif/2";
+        const valid = data.data.filter(art => art.image_id);
+        if (!valid.length) throw new Error("No artwork found");
+        const art = valid[Math.floor(Math.random() * valid.length)];
+        return {
+          title: art.title || "Untitled",
+          artist: art.artist_display || "Unknown Artist",
+          imgUrl: `${iiifBaseUrl}/${art.image_id}/full/1200,/0/default.jpg`
+        };
+      } catch (e) {
+        const fallbackPage = Math.floor(Math.random() * 300) + 1;
+        const res = await fetch(`https://api.artic.edu/api/v1/artworks?page=${fallbackPage}&limit=20&fields=id,title,artist_display,image_id,is_public_domain`);
+        const fallbackData = await res.json();
+        const valid = fallbackData.data.filter(a => a.is_public_domain && a.image_id);
+        const art = valid[Math.floor(Math.random() * valid.length)];
+        const iiifBaseUrl = fallbackData.config?.iiif_url || "https://lakecountypress.com/iiif/2";
+        return {
+          title: art.title || "Untitled",
+          artist: art.artist_display || "Unknown Artist",
+          imgUrl: `${iiifBaseUrl}/${art.image_id}/full/1200,/0/default.jpg`
+        };
+      }
+    }
+
+    async function loadNextArtwork() {
+      imgEl.classList.remove('loaded');
+      try {
+        const item = await fetchRandomArtwork();
+        historyStack.push(item);
+        historyIndex = historyStack.length - 1;
+        renderArtwork(item);
+      } catch (err) {
+        setTimeout(loadNextArtwork, 1000);
+      }
+    }
+
+    function renderArtwork(item) {
+      imgEl.src = item.imgUrl;
+      titleEl.innerText = `"${item.title}"`;
+      artistEl.innerText = item.artist;
+      imgEl.onload = () => imgEl.classList.add('loaded');
+      resetTimer();
+    }
+
+    function resetTimer() {
+      if (timer) clearInterval(timer);
+      if (!isPaused) timer = setInterval(loadNextArtwork, intervalSeconds * 1000);
+    }
+
+    function handleTap(e) {
+      const screenWidth = window.innerWidth;
+      const tapX = e.clientX;
+      if (tapX < screenWidth * 0.3) {
+        if (historyIndex > 0) { historyIndex--; renderArtwork(historyStack[historyIndex]); }
+      } else if (tapX > screenWidth * 0.7) {
+        loadNextArtwork();
+      } else {
+        togglePause();
+      }
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      if (isPaused) {
+        if (timer) clearInterval(timer);
+        badgeEl.innerText = "PAUSED";
+        badgeEl.style.color = "#ff9900";
+      } else {
+        badgeEl.innerText = `${intervalSeconds}s Cycle`;
+        badgeEl.style.color = "#cccccc";
+        loadNextArtwork();
+      }
+    }
+
+    loadNextArtwork();
+  </script>
+</body>
+</html>
