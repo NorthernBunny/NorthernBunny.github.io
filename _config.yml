@@ -20,7 +20,7 @@
 lang:                  en
 
 # The title of your blog. Used in the sidebar and the browser tab.
-title:                 " " 
+title:                 The Northern Bunny
 
 # A short description (~150 chars) of the page used for the meta description tag.
 # Can use markdown, but no more than one paragraph (enforced by `>`)
@@ -41,7 +41,7 @@ logo:                  none
 # This should be the same author as first entry in `_data/authors.yml`.
 author: 
   # Used by `jekyll-feed`:
-  name:                " " 
+  name:                Northern Bunny 
   email:               "thenorthernbunny@proton.me" 
   bio:                 "A digital garden documenting my home lab tech projects, artistic endeavors and health journey."
   # # Used by `jekyll-seo-tag`:
