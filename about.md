@@ -4,9 +4,8 @@ title: About
 description: >
   A collection of atoms working together as a human on planet Earth,
   flying through the cosmos. Likes bunnies, tech, and art.
+hide_description: true
 ---
-
-# About
 
 A collection of atoms working together as a human on planet Earth, flying
 through the cosmos. Likes bunnies, tech, and art.
