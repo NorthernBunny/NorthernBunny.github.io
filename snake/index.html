@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snake</title>
+<style>
+  :root {
+    --bg: #f4f6f1;
+    --text: #1d2a1f;
+    --muted: #5d6b5a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141a16;
+      --text: #e6efe4;
+      --muted: #97a894;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141a16;
+    --text: #e6efe4;
+    --muted: #97a894;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    overflow: hidden;
+  }
+  #hud {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px 18px;
+    text-align: center;
+  }
+  .score {
+    font-size: 1.25rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .score span { color: var(--muted); margin-right: 6px; }
+  .hint {
+    width: 100%;
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  #board {
+    display: block;
+    border-radius: 8px;
+    /* Size is set from JavaScript (fitBoard) to fill the window in portrait. */
+  }
+</style>
+</head>
+<body>
+  <div id="hud">
+    <div class="score"><span>Score</span><strong id="score">0</strong></div>
+    <div class="score"><span>Best</span><strong id="best">0</strong></div>
+    <div class="hint">Arrow keys or WASD to move. P to pause. Enter or Space to restart.</div>
+  </div>
+  <canvas id="board" width="800" height="1080" aria-label="Snake game board"></canvas>
+
+<script>
+  // Portrait arcade board: 20 columns by 27 rows of square cells (800 x 1080).
+  const COLS = 20;
+  const ROWS = 27;
+  const TICK_MS = 120;
+  const HIGH_SCORE_KEY = "snake-high-score";
+
+  const canvas = document.getElementById("board");
+  const ctx = canvas.getContext("2d");
+  const scoreEl = document.getElementById("score");
+  const bestEl = document.getElementById("best");
+
+  const cell = canvas.width / COLS;
+  const W = canvas.width;
+  const H = canvas.height;
+
+  const DIRS = {
+    up:    { x: 0, y: -1 },
+    down:  { x: 0, y: 1 },
+    left:  { x: -1, y: 0 },
+    right: { x: 1, y: 0 },
+  };
+  const KEY_TO_DIR = {
+    ArrowUp: "up", KeyW: "up",
+    ArrowDown: "down", KeyS: "down",
+    ArrowLeft: "left", KeyA: "left",
+    ArrowRight: "right", KeyD: "right",
+  };
+  const OPPOSITE = { up: "down", down: "up", left: "right", right: "left" };
+  const ANGLES = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 };
+
+  // Sprites are drawn once to offscreen canvases so the per-frame work stays small.
+  const FALCON_SPRITE = makeFalconSprite();
+  const TIE_SPRITE = makeTieSprite();
+
+  // Falcon: 24 design units drawn at 2x (48 px), alpha snapped for crisp edges.
+  function makeFalconSprite() {
+    const c = document.createElement("canvas");
+    c.width = c.height = 48;
+    const g = c.getContext("2d");
+    g.scale(2, 2);
+    g.lineJoin = "round";
+
+    // Engine pods at the rear
+    g.fillStyle = "#3c434d";
+    g.strokeStyle = "#9aa3ad";
+    g.lineWidth = 0.8;
+    for (const y of [8, 16]) {
+      g.beginPath();
+      g.arc(4, y, 2.2, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+    }
+
+    // Forward mandibles
+    g.fillStyle = "#c9d1d9";
+    g.strokeStyle = "#2b2f36";
+    g.lineWidth = 0.8;
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(8, 12 + side * 2);
+      g.lineTo(21, 12 + side * 5);
+      g.lineTo(21, 12 + side * 3);
+      g.lineTo(8, 12 + side * 4);
+      g.closePath();
+      g.fill();
+      g.stroke();
+    }
+
+    // Round hull with a panel ring and a dome
+    g.fillStyle = "#8a94a0";
+    g.strokeStyle = "#2b2f36";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.arc(12, 12, 8, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.strokeStyle = "#5b6470";
+    g.lineWidth = 0.7;
+    g.beginPath();
+    g.arc(12, 12, 5, 0, Math.PI * 2);
+    g.stroke();
+    g.fillStyle = "#5b6470";
+    g.beginPath();
+    g.arc(11, 12, 2.5, 0, Math.PI * 2);
+    g.fill();
+
+    // Cockpit canopy at the front
+    g.fillStyle = "#8fd8ff";
+    g.strokeStyle = "#2b2f36";
+    g.lineWidth = 0.8;
+    g.beginPath();
+    g.ellipse(17, 12, 2.2, 1.8, 0, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+
+    const img = g.getImageData(0, 0, 48, 48);
+    for (let i = 3; i < img.data.length; i += 4) {
+      img.data[i] = img.data[i] >= 128 ? 255 : 0;
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.putImageData(img, 0, 0);
+    return c;
+  }
+
+  // TIE fighter, head-on: 100 design units drawn at 2x (200 px), smooth edges,
+  // shaded wings with a solar-cell grid, a shaded ball cockpit and a glowing window.
+  function makeTieSprite() {
+    const c = document.createElement("canvas");
+    c.width = c.height = 200;
+    const g = c.getContext("2d");
+    g.scale(2, 2);
+
+    // Strut between the cockpit and the wings, drawn first so wings sit on top
+    const strut = g.createLinearGradient(0, 46, 0, 54);
+    strut.addColorStop(0, "#8a939e");
+    strut.addColorStop(1, "#3b4048");
+    g.fillStyle = strut;
+    g.fillRect(30, 46, 40, 8);
+
+    for (const side of [-1, 1]) {
+      const cx = 50 + side * 30;
+      const hw = 13;
+      const hh = 31;
+      const hex = () => {
+        g.beginPath();
+        g.moveTo(cx, 50 - hh);
+        g.lineTo(cx + hw, 50 - hh / 2);
+        g.lineTo(cx + hw, 50 + hh / 2);
+        g.lineTo(cx, 50 + hh);
+        g.lineTo(cx - hw, 50 + hh / 2);
+        g.lineTo(cx - hw, 50 - hh / 2);
+        g.closePath();
+      };
+
+      // Panel body, shaded from light to dark across the wing
+      const wing = g.createLinearGradient(cx - hw, 0, cx + hw, 0);
+      wing.addColorStop(0, "#f2f5f8");
+      wing.addColorStop(0.5, "#b7c0cb");
+      wing.addColorStop(1, "#6f7986");
+      hex();
+      g.fillStyle = wing;
+      g.fill();
+
+      // Solar-cell grid, clipped to the panel
+      g.save();
+      hex();
+      g.clip();
+      g.strokeStyle = "rgba(40, 48, 60, 0.55)";
+      g.lineWidth = 0.8;
+      g.beginPath();
+      g.moveTo(cx, 50 - hh);
+      g.lineTo(cx, 50 + hh);
+      for (const dy of [-16, -8, 8, 16]) {
+        g.moveTo(cx - hw, 50 + dy);
+        g.lineTo(cx + hw, 50 + dy);
+      }
+      g.stroke();
+      g.restore();
+
+      // Outline and a specular edge highlight
+      hex();
+      g.strokeStyle = "#1e232b";
+      g.lineWidth = 2;
+      g.stroke();
+      g.strokeStyle = "rgba(255, 255, 255, 0.7)";
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(cx - hw + 1.5, 50 - hh / 2);
+      g.lineTo(cx, 50 - hh + 2);
+      g.stroke();
+    }
+
+    // Cockpit ball, lit from the upper left
+    const ball = g.createRadialGradient(44, 42, 3, 50, 50, 20);
+    ball.addColorStop(0, "#7d8794");
+    ball.addColorStop(0.6, "#353b45");
+    ball.addColorStop(1, "#14171c");
+    g.fillStyle = ball;
+    g.beginPath();
+    g.arc(50, 50, 19, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = "#0d0f13";
+    g.lineWidth = 1.5;
+    g.stroke();
+
+    // Cockpit window
+    const win = g.createRadialGradient(48, 46, 1, 50, 48, 9);
+    win.addColorStop(0, "#e6f7ff");
+    win.addColorStop(0.4, "#7fd0ff");
+    win.addColorStop(1, "#1f5f8f");
+    g.fillStyle = win;
+    g.beginPath();
+    g.ellipse(50, 47, 9, 7, 0, 0, Math.PI * 2);
+    g.fill();
+
+    return c;
+  }
+
+  // Space background: stars and planets are generated once, stars flicker per frame.
+  const stars = Array.from({ length: 180 }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    r: 0.8 + Math.random() * 1.6,
+    speed: 1.5 + Math.random() * 3,
+    phase: Math.random() * Math.PI * 2,
+  }));
+  const planets = [
+    { x: 0.8 * W, y: 0.16 * H, r: 0.09 * W, rgb: "217, 138, 78", bands: true },
+    { x: 0.12 * W, y: 0.84 * H, r: 0.05 * W, rgb: "90, 166, 217", bands: false },
+  ];
+
+  let snake, dir, nextDir, food, score, best, running, gameOver, paused, timer;
+
+  function loadBest() {
+    try {
+      return Number(localStorage.getItem(HIGH_SCORE_KEY)) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function saveBest(value) {
+    try {
+      localStorage.setItem(HIGH_SCORE_KEY, String(value));
+    } catch (e) {
+      // Storage can be blocked; the high score still works for this session.
+    }
+  }
+
+  best = loadBest();
+  bestEl.textContent = best;
+
+  // Fill as much of the window as possible while keeping the board's aspect ratio.
+  function fitBoard() {
+    const hud = document.getElementById("hud");
+    const availH = window.innerHeight - hud.offsetHeight - 36;
+    const availW = window.innerWidth - 24;
+    const ratio = canvas.width / canvas.height;
+    let h = Math.max(120, availH);
+    let w = h * ratio;
+    if (w > availW) {
+      w = availW;
+      h = w / ratio;
+    }
+    canvas.style.width = `${Math.floor(w)}px`;
+    canvas.style.height = `${Math.floor(h)}px`;
+  }
+
+  function reset() {
+    snake = [
+      { x: Math.floor(COLS / 2), y: Math.floor(ROWS / 2) },
+      { x: Math.floor(COLS / 2) - 1, y: Math.floor(ROWS / 2) },
+      { x: Math.floor(COLS / 2) - 2, y: Math.floor(ROWS / 2) },
+    ];
+    dir = "right";
+    nextDir = "right";
+    score = 0;
+    gameOver = false;
+    running = true;
+    paused = false;
+    scoreEl.textContent = score;
+    placeFood();
+    clearInterval(timer);
+    timer = setInterval(tick, TICK_MS);
+  }
+
+  function placeFood() {
+    const free = [];
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (!snake.some((s) => s.x === x && s.y === y)) free.push({ x, y });
+      }
+    }
+    food = free.length
+      ? free[Math.floor(Math.random() * free.length)]
+      : null;
+  }
+
+  function tick() {
+    if (!running || paused) return;
+    dir = nextDir;
+    const head = snake[0];
+    const d = DIRS[dir];
+    const next = { x: head.x + d.x, y: head.y + d.y };
+
+    const hitWall = next.x < 0 || next.x >= COLS || next.y < 0 || next.y >= ROWS;
+    // The tail moves away this tick, so the tail cell is safe to enter.
+    const body = snake.slice(0, -1);
+    const hitSelf = body.some((s) => s.x === next.x && s.y === next.y);
+
+    if (hitWall || hitSelf) {
+      endGame();
+      return;
+    }
+
+    snake.unshift(next);
+    if (food && next.x === food.x && next.y === food.y) {
+      score += 1;
+      scoreEl.textContent = score;
+      if (score > best) {
+        best = score;
+        bestEl.textContent = best;
+        saveBest(best);
+      }
+      placeFood();
+      if (!food) {
+        // Board filled: the player wins, so stop without a crash.
+        running = false;
+        clearInterval(timer);
+      }
+    } else {
+      snake.pop();
+    }
+  }
+
+  function endGame() {
+    running = false;
+    gameOver = true;
+    clearInterval(timer);
+  }
+
+  function togglePause() {
+    if (!running) return;
+    paused = !paused;
+  }
+
+  // One flickering exhaust flame along +x, starting at the origin. Three
+  // layers (red, orange, white-hot core) give it depth.
+  function drawFlame(len, width, t, seed) {
+    const L = len * (1 + 0.18 * Math.sin(t * 18 + seed) + 0.1 * Math.sin(t * 31 + seed * 2.3));
+    const spread = width * (0.9 + 0.2 * Math.sin(t * 23 + seed * 1.7));
+    const layers = [
+      { k: 1.0, color: "rgba(255, 70, 30, 0.75)" },
+      { k: 0.68, color: "rgba(255, 170, 50, 0.9)" },
+      { k: 0.36, color: "rgba(255, 250, 200, 0.95)" },
+    ];
+    for (const { k, color } of layers) {
+      const l = L * k;
+      const w = spread * k;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, -w);
+      ctx.quadraticCurveTo(l * 0.5, -w * 0.8, l, 0);
+      ctx.quadraticCurveTo(l * 0.5, w * 0.8, 0, w);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // The falcon head: two engine flames out the back, then the sprite,
+  // nose pointing along the direction of travel.
+  function drawFalconHead(s, t) {
+    const c = cell;
+    const size = c * 1.35;
+    ctx.save();
+    ctx.translate((s.x + 0.5) * c, (s.y + 0.5) * c);
+    ctx.rotate(ANGLES[dir]);
+
+    for (const [i, y] of [[0, -0.167], [1, 0.167]]) {
+      ctx.save();
+      ctx.translate(-0.33 * size, y * size);
+      ctx.rotate(Math.PI);
+      drawFlame(c * 0.8, c * 0.2, t, i * 3.1 + 0.5);
+      ctx.restore();
+    }
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(FALCON_SPRITE, -size / 2, -size / 2, size, size);
+    ctx.restore();
+  }
+
+  // A body segment is a flame trailing away from the segment in front of it.
+  function drawExhaust(i, t) {
+    const s = snake[i];
+    const ahead = snake[i - 1];
+    const angle = Math.atan2(s.y - ahead.y, s.x - ahead.x);
+    const c = cell;
+    const age = i / snake.length;
+
+    ctx.save();
+    ctx.translate((s.x + 0.5) * c, (s.y + 0.5) * c);
+    ctx.rotate(angle);
+
+    // Faint glow at the segment's own cell so the body stays continuous
+    ctx.fillStyle = "rgba(255, 120, 40, 0.35)";
+    ctx.beginPath();
+    ctx.arc(0, 0, c * (0.24 - 0.08 * age), 0, Math.PI * 2);
+    ctx.fill();
+
+    drawFlame(c * (1.0 - 0.35 * age), c * (0.38 - 0.14 * age), t, i * 1.37);
+    ctx.restore();
+  }
+
+  // TIE fighter food, head-on, with a slow idle pulse.
+  function drawTieFighter(f, t) {
+    const size = cell * 1.2;
+    const pulse = 1 + 0.03 * Math.sin(t * 4);
+    ctx.save();
+    ctx.translate((f.x + 0.5) * cell, (f.y + 0.5) * cell);
+    ctx.scale(pulse, pulse);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(TIE_SPRITE, -size / 2, -size / 2, size, size);
+    ctx.restore();
+  }
+
+  function drawSpace(now) {
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "#03040a");
+    bg.addColorStop(1, "#000000");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    const t = now / 1000;
+    for (const s of stars) {
+      const flicker = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+      ctx.fillStyle = `rgba(255, 255, 255, ${flicker.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (const p of planets) {
+      // Soft glow around the planet
+      const glow = ctx.createRadialGradient(p.x, p.y, p.r * 0.9, p.x, p.y, p.r * 2.2);
+      glow.addColorStop(0, `rgba(${p.rgb}, 0.45)`);
+      glow.addColorStop(1, `rgba(${p.rgb}, 0)`);
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Planet body, lit from the upper left
+      const body = ctx.createRadialGradient(
+        p.x - p.r * 0.35, p.y - p.r * 0.35, p.r * 0.1,
+        p.x, p.y, p.r
+      );
+      body.addColorStop(0, `rgba(${p.rgb}, 1)`);
+      body.addColorStop(1, `rgba(${p.rgb}, 0.55)`);
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.bands) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.14)";
+        ctx.fillRect(p.x - p.r, p.y - p.r * 0.2, p.r * 2, p.r * 0.18);
+        ctx.fillRect(p.x - p.r, p.y + p.r * 0.25, p.r * 2, p.r * 0.1);
+        ctx.restore();
+      }
+    }
+  }
+
+  function drawOverlay(title, subtitle) {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 56px system-ui, sans-serif";
+    ctx.fillText(title, W / 2, H / 2 - 28);
+    ctx.font = "32px system-ui, sans-serif";
+    ctx.fillText(subtitle, W / 2, H / 2 + 36);
+  }
+
+  function draw(now) {
+    drawSpace(now);
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < COLS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * cell, 0);
+      ctx.lineTo(i * cell, H);
+      ctx.stroke();
+    }
+    for (let i = 1; i < ROWS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, i * cell);
+      ctx.lineTo(W, i * cell);
+      ctx.stroke();
+    }
+
+    const t = now / 1000;
+    if (food) drawTieFighter(food, t);
+
+    // Draw tail first so the flames nearer the falcon sit on top.
+    for (let i = snake.length - 1; i >= 1; i--) drawExhaust(i, t);
+    drawFalconHead(snake[0], t);
+
+    if (gameOver) {
+      drawOverlay("Game over", "Press Enter or Space to play again");
+    } else if (!running && !food) {
+      drawOverlay("You win!", "Press Enter or Space to play again");
+    } else if (paused) {
+      drawOverlay("Paused", "Press P to resume");
+    }
+  }
+
+  function frame(now) {
+    draw(now);
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Enter" || e.code === "Space") {
+      if (!running) {
+        e.preventDefault();
+        reset();
+      }
+      return;
+    }
+
+    if (e.code === "KeyP") {
+      togglePause();
+      return;
+    }
+
+    const name = KEY_TO_DIR[e.code];
+    if (!name) return;
+    e.preventDefault();
+    if (paused) return;
+    // Compare against the direction the snake is moving now, not the queued
+    // one, so two quick presses cannot reverse it within a single tick.
+    if (name === OPPOSITE[dir]) return;
+    nextDir = name;
+  });
+
+  window.addEventListener("resize", fitBoard);
+  fitBoard();
+  reset();
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>
