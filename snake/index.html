@@ -60,15 +60,53 @@
     border-radius: 8px;
     /* Size is set from JavaScript (fitBoard) to fill the window in portrait. */
   }
+  #stage { position: relative; line-height: 0; }
+  #title {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 8px;
+    color: #e6efe4;
+    text-align: center;
+    line-height: normal;
+  }
+  #title.hidden { display: none; }
+  #title h2 { margin: 0; font-size: 2.4rem; letter-spacing: 0.1em; }
+  #title p { margin: 0; color: #cfd9cc; }
+  #start {
+    font: inherit;
+    font-size: 1.2rem;
+    padding: 10px 30px;
+    border: 0;
+    border-radius: 8px;
+    background: #5fb36f;
+    color: #06130a;
+    cursor: pointer;
+  }
+  #start:hover { background: #7cc78a; }
+  #start:focus-visible { outline: 3px solid #8fd8ff; outline-offset: 3px; }
 </style>
 </head>
 <body>
   <div id="hud">
     <div class="score"><span>Score</span><strong id="score">0</strong></div>
     <div class="score"><span>Best</span><strong id="best">0</strong></div>
-    <div class="hint">Arrow keys or WASD to move. P to pause. Enter or Space to restart.</div>
+    <div class="hint">Arrow keys or WASD to move. 2 for 2D, 3 for 3D. P to pause. M to mute. Enter or Space to restart.</div>
   </div>
-  <canvas id="board" width="800" height="1080" aria-label="Snake game board"></canvas>
+  <div id="stage">
+    <canvas id="board" width="800" height="1080" aria-label="Snake game board"></canvas>
+    <div id="title">
+      <h2>Snake</h2>
+      <p id="modeLabel"></p>
+      <button id="start" type="button">Start (1)</button>
+      <p>2 = 2D &nbsp;·&nbsp; 3 = 3D</p>
+    </div>
+  </div>
 
 <script>
   // Portrait arcade board: 20 columns by 27 rows of square cells (800 x 1080).
@@ -284,6 +322,122 @@
 
   let snake, dir, nextDir, food, score, best, running, gameOver, paused, timer;
 
+  // ---- Sound ----
+  // Everything is synthesized with the Web Audio API, so no audio files are needed.
+  // The AudioContext is created on the first key press, since browsers block
+  // audio until the user interacts with the page.
+  const audio = { ctx: null, master: null, musicBus: null, sfxBus: null, muted: false, musicOn: false, nextTime: 0, step: 0, musicTimer: null };
+
+  // Bass and lead patterns for a 16-step loop, as MIDI note numbers (A minor).
+  const LEAD = [69, 72, 76, 72, 67, 71, 74, 71, 65, 69, 72, 69, 64, 68, 71, 68];
+  const BASS = [45, 41, 48, 40];
+  const STEP_SEC = 60 / 130 / 2; // eighth notes at 130 BPM
+
+  const midiToHz = (n) => 440 * Math.pow(2, (n - 69) / 12);
+
+  function ensureAudio() {
+    if (audio.ctx) {
+      if (audio.ctx.state === "suspended") audio.ctx.resume();
+      return;
+    }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audio.ctx = new AC();
+    audio.master = audio.ctx.createGain();
+    audio.master.gain.value = audio.muted ? 0 : 0.7;
+    audio.master.connect(audio.ctx.destination);
+    audio.musicBus = audio.ctx.createGain();
+    audio.musicBus.gain.value = 0.5;
+    audio.musicBus.connect(audio.master);
+    audio.sfxBus = audio.ctx.createGain();
+    audio.sfxBus.gain.value = 0.8;
+    audio.sfxBus.connect(audio.master);
+  }
+
+  // One short tone with an attack and release envelope, optionally sliding in pitch.
+  function tone({ freq, freqEnd, time, dur, type = "square", vol = 0.15, bus }) {
+    const ctx = audio.ctx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, time);
+    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, time + dur);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(vol, time + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    osc.connect(gain);
+    gain.connect(bus);
+    osc.start(time);
+    osc.stop(time + dur + 0.02);
+  }
+
+  function sfx(opts) {
+    if (demo || !audio.ctx) return;
+    tone({ ...opts, time: audio.ctx.currentTime, bus: audio.sfxBus });
+  }
+
+  function sfxStart() {
+    sfx({ freq: 523, dur: 0.08, vol: 0.12 });
+    sfx({ freq: 659, dur: 0.08, vol: 0.12 });
+    sfx({ freq: 784, dur: 0.12, vol: 0.12 });
+  }
+  function sfxEat() {
+    sfx({ freq: 660, freqEnd: 1320, dur: 0.12, vol: 0.18 });
+  }
+  function sfxPause() {
+    sfx({ freq: 880, freqEnd: 440, dur: 0.15, vol: 0.14, type: "triangle" });
+  }
+  function sfxResume() {
+    sfx({ freq: 440, freqEnd: 880, dur: 0.15, vol: 0.14, type: "triangle" });
+  }
+  function sfxGameOver() {
+    sfx({ freq: 400, freqEnd: 80, dur: 0.9, vol: 0.2, type: "sawtooth" });
+  }
+  function sfxWin() {
+    if (demo || !audio.ctx) return;
+    [72, 76, 79, 84].forEach((n, i) => {
+      tone({ freq: midiToHz(n), time: audio.ctx.currentTime + i * 0.12, dur: 0.2, vol: 0.14, bus: audio.sfxBus });
+    });
+  }
+
+  // Looping background music, scheduled a little ahead of the audio clock.
+  function scheduleMusicStep(i, time) {
+    tone({ freq: midiToHz(LEAD[i]), time, dur: STEP_SEC * 0.9, vol: 0.05, type: "square", bus: audio.musicBus });
+    if (i % 4 === 0) {
+      tone({ freq: midiToHz(BASS[i / 4]), time, dur: STEP_SEC * 1.8, vol: 0.14, type: "triangle", bus: audio.musicBus });
+    }
+  }
+
+  function musicTick() {
+    const ctx = audio.ctx;
+    while (audio.nextTime < ctx.currentTime + 0.15) {
+      scheduleMusicStep(audio.step, audio.nextTime);
+      audio.nextTime += STEP_SEC;
+      audio.step = (audio.step + 1) % LEAD.length;
+    }
+  }
+
+  function startMusic() {
+    if (demo || !audio.ctx || audio.musicOn) return;
+    audio.musicOn = true;
+    audio.step = 0;
+    audio.nextTime = audio.ctx.currentTime + 0.05;
+    musicTick();
+    audio.musicTimer = setInterval(musicTick, 50);
+  }
+
+  function stopMusic() {
+    audio.musicOn = false;
+    clearInterval(audio.musicTimer);
+  }
+
+  function toggleMute() {
+    audio.muted = !audio.muted;
+    if (audio.master) {
+      audio.master.gain.setTargetAtTime(audio.muted ? 0 : 0.7, audio.ctx.currentTime, 0.02);
+    }
+  }
+
   function loadBest() {
     try {
       return Number(localStorage.getItem(HIGH_SCORE_KEY)) || 0;
@@ -332,9 +486,16 @@
     running = true;
     paused = false;
     scoreEl.textContent = score;
-    placeFood();
+    if (mode === "3d") {
+      reset3D();
+    } else {
+      placeFood();
+    }
     clearInterval(timer);
-    timer = setInterval(tick, TICK_MS);
+    timer = setInterval(tickAny, mode === "3d" ? TICK3D_MS : TICK_MS);
+    ensureAudio();
+    sfxStart();
+    startMusic();
   }
 
   function placeFood() {
@@ -370,7 +531,8 @@
     if (food && next.x === food.x && next.y === food.y) {
       score += 1;
       scoreEl.textContent = score;
-      if (score > best) {
+      sfxEat();
+      if (score > best && !demo) {
         best = score;
         bestEl.textContent = best;
         saveBest(best);
@@ -379,6 +541,8 @@
       if (!food) {
         // Board filled: the player wins, so stop without a crash.
         running = false;
+        stopMusic();
+        sfxWin();
         clearInterval(timer);
       }
     } else {
@@ -390,11 +554,301 @@
     running = false;
     gameOver = true;
     clearInterval(timer);
+    stopMusic();
+    sfxGameOver();
+    if (demo) {
+      // The demo loops itself: start another run shortly after it ends.
+      setTimeout(() => {
+        if (demo && !running) reset();
+      }, 1500);
+    }
   }
 
   function togglePause() {
-    if (!running) return;
+    if (!running || demo) return;
     paused = !paused;
+    if (paused) {
+      stopMusic();
+      sfxPause();
+    } else {
+      startMusic();
+      sfxResume();
+    }
+  }
+
+  // ---- First-person 3D mode (press 3) ----
+  // The board becomes a square trench. The falcon flies forward on its own, and
+  // the arrow keys steer it up, down, left and right inside the trench. The
+  // camera sits a few cells behind the falcon and follows it part of the way.
+  const TRENCH = 9;
+  const TICK3D_MS = 150;
+  const CAM_BACK = 6;
+  const FOCAL = canvas.width * 0.9;
+  const STEER3 = { up: ["vy", 1], down: ["vy", -1], left: ["vx", -1], right: ["vx", 1] };
+  let mode = "2d";
+  let s3 = null;
+
+  // Attract mode: until the player starts, the game plays itself behind the title screen.
+  let demo = true;
+
+  function autopilot2D() {
+    const head = snake[0];
+    const key = (x, y) => x + "," + y;
+    const blocked = new Set(snake.slice(0, -1).map((s) => key(s.x, s.y)));
+    // Breadth-first search from the head to the food, avoiding the body and walls
+    const came = new Map([[key(head.x, head.y), null]]);
+    const queue = [head];
+    let reached = false;
+    while (queue.length && !reached) {
+      const c = queue.shift();
+      for (const name of Object.keys(DIRS)) {
+        const n = { x: c.x + DIRS[name].x, y: c.y + DIRS[name].y };
+        const k = key(n.x, n.y);
+        if (n.x < 0 || n.x >= COLS || n.y < 0 || n.y >= ROWS) continue;
+        if (blocked.has(k) || came.has(k)) continue;
+        came.set(k, { from: c, name });
+        if (food && n.x === food.x && n.y === food.y) {
+          reached = true;
+          break;
+        }
+        queue.push(n);
+      }
+    }
+
+    let move = null;
+    if (reached) {
+      // Walk back from the food to find the first step out of the head
+      let node = food;
+      while (true) {
+        const step = came.get(key(node.x, node.y));
+        if (step.from.x === head.x && step.from.y === head.y) {
+          move = step.name;
+          break;
+        }
+        node = step.from;
+      }
+    } else {
+      // No path to the food: take any safe move
+      const safe = Object.keys(DIRS).filter((name) => {
+        if (name === OPPOSITE[dir]) return false;
+        const n = { x: head.x + DIRS[name].x, y: head.y + DIRS[name].y };
+        return n.x >= 0 && n.x < COLS && n.y >= 0 && n.y < ROWS && !blocked.has(key(n.x, n.y));
+      });
+      if (safe.length) move = safe[Math.floor(Math.random() * safe.length)];
+    }
+    if (move) nextDir = move;
+  }
+
+  // In 3D the falcon steers toward the TIE's x and y while it flies forward.
+  function autopilot3D() {
+    const f = s3.food;
+    if (!f) return;
+    const head = s3.trail[0];
+    s3.vx = Math.sign(f.x - head.x);
+    s3.vy = Math.sign(f.y - head.y);
+  }
+
+  function updateTitle() {
+    document.getElementById("title").classList.toggle("hidden", !demo);
+    document.getElementById("modeLabel").textContent =
+      mode === "3d" ? "3D mode: first-person trench" : "2D mode: classic board";
+  }
+
+  function startGame() {
+    if (!demo) return;
+    demo = false;
+    updateTitle();
+    reset();
+  }
+
+  function spawnFood3(headZ) {
+    return {
+      x: Math.floor(Math.random() * TRENCH),
+      y: Math.floor(Math.random() * TRENCH),
+      z: headZ + 8 + Math.floor(Math.random() * 8),
+    };
+  }
+
+  function reset3D() {
+    const mid = Math.floor(TRENCH / 2);
+    const start = { x: mid, y: mid, z: 0 };
+    s3 = {
+      trail: [start, { x: mid, y: mid, z: -1 }, { x: mid, y: mid, z: -2 }],
+      vx: 0,
+      vy: 0,
+      prev: { ...start },
+      lastTick: performance.now(),
+      food: null,
+    };
+    s3.food = spawnFood3(0);
+  }
+
+  function tickAny() {
+    if (demo) {
+      if (mode === "3d") autopilot3D();
+      else autopilot2D();
+    }
+    if (mode === "3d") tick3d();
+    else tick();
+  }
+
+  function tick3d() {
+    if (!running || paused) return;
+    const head = s3.trail[0];
+    const next = { x: head.x + s3.vx, y: head.y + s3.vy, z: head.z + 1 };
+    s3.prev = { ...head };
+    s3.lastTick = performance.now();
+
+    if (next.x < 0 || next.x >= TRENCH || next.y < 0 || next.y >= TRENCH) {
+      endGame();
+      return;
+    }
+
+    s3.trail.unshift(next);
+    const f = s3.food;
+    if (f && next.z === f.z && next.x === f.x && next.y === f.y) {
+      score += 1;
+      scoreEl.textContent = score;
+      if (score > best && !demo) {
+        best = score;
+        bestEl.textContent = best;
+        saveBest(best);
+      }
+      sfxEat();
+      s3.food = spawnFood3(next.z);
+    } else {
+      s3.trail.pop();
+      // A TIE that slipped past the falcon is replaced with a new one ahead.
+      if (f && next.z >= f.z) s3.food = spawnFood3(next.z);
+    }
+  }
+
+  // Holding an arrow steers the falcon that way; releasing it stops that axis.
+  // Pressing the opposite of the current steer is ignored (no reversing).
+  function steer3(name, pressed) {
+    const [key, sign] = STEER3[name];
+    if (pressed) {
+      if (s3[key] !== -sign) s3[key] = sign;
+    } else if (s3[key] === sign) {
+      s3[key] = 0;
+    }
+  }
+
+  function setMode(m) {
+    if (m === mode) return;
+    mode = m;
+    updateTitle();
+    reset();
+  }
+
+  function project(p, cam) {
+    const dz = p.z - cam.z;
+    const s = FOCAL / dz;
+    return {
+      x: canvas.width / 2 + (p.x - cam.x) * s,
+      y: canvas.height / 2 - (p.y - cam.y) * s,
+      s,
+      dz,
+    };
+  }
+
+  function draw3D(now) {
+    const frac = Math.min(1, Math.max(0, (now - s3.lastTick) / TICK3D_MS));
+    const head = s3.trail[0];
+    const hx = s3.prev.x + (head.x - s3.prev.x) * frac + 0.5;
+    const hy = s3.prev.y + (head.y - s3.prev.y) * frac + 0.5;
+    const hz = s3.prev.z + (head.z - s3.prev.z) * frac + 0.5;
+    const cam = {
+      x: TRENCH / 2 + (hx - TRENCH / 2) * 0.5,
+      y: TRENCH / 2 + (hy - TRENCH / 2) * 0.5,
+      z: hz - CAM_BACK,
+    };
+    const near = cam.z + 0.3;
+    const far = cam.z + 40;
+    const fog = (z) => Math.max(0, 1 - (z - cam.z) / 40);
+    const P = (x, y, z) => project({ x, y, z }, cam);
+
+    // Trench walls: floor, ceiling, left and right, as translucent panels
+    const walls = [
+      [[0, 0], [TRENCH, 0]],
+      [[0, TRENCH], [TRENCH, TRENCH]],
+      [[0, 0], [0, TRENCH]],
+      [[TRENCH, 0], [TRENCH, TRENCH]],
+    ];
+    ctx.fillStyle = "rgba(10, 30, 60, 0.45)";
+    for (const [a, b] of walls) {
+      const pts = [P(a[0], a[1], near), P(b[0], b[1], near), P(b[0], b[1], far), P(a[0], a[1], far)];
+      ctx.beginPath();
+      pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Lines running down the trench
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(120, 200, 255, 0.35)";
+    ctx.beginPath();
+    for (let i = 0; i <= TRENCH; i++) {
+      for (const [x0, y0, x1, y1] of [[i, 0, i, 0], [i, TRENCH, i, TRENCH], [0, i, 0, i], [TRENCH, i, TRENCH, i]]) {
+        const a = P(x0, y0, near);
+        const b = P(x1, y1, far);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+      }
+    }
+    ctx.stroke();
+
+    // Rings across the trench that fade with distance
+    for (let k = Math.ceil(near); k <= far; k++) {
+      ctx.strokeStyle = `rgba(120, 200, 255, ${(0.5 * fog(k)).toFixed(3)})`;
+      ctx.beginPath();
+      for (const [a, b] of walls) {
+        const pa = P(a[0], a[1], k);
+        const pb = P(b[0], b[1], k);
+        ctx.moveTo(pa.x, pa.y);
+        ctx.lineTo(pb.x, pb.y);
+      }
+      ctx.stroke();
+    }
+
+    // Food, trail and falcon, drawn far to near
+    const items = [];
+    if (s3.food) {
+      const f = s3.food;
+      items.push({ kind: "food", p: P(f.x + 0.5, f.y + 0.5, f.z + 0.5) });
+    }
+    s3.trail.forEach((seg, i) => {
+      if (i === 0) return;
+      items.push({ kind: "trail", i, p: P(seg.x + 0.5, seg.y + 0.5, seg.z + 0.5) });
+    });
+    items.push({ kind: "head", p: P(hx, hy, hz) });
+    items.sort((a, b) => b.p.dz - a.p.dz);
+
+    const t = now / 1000;
+    for (const it of items) {
+      const p = it.p;
+      if (p.dz < 0.2) continue;
+      const size = p.s * 1.1;
+      if (it.kind === "food") {
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(TIE_SPRITE, p.x - size / 2, p.y - size / 2, size, size);
+      } else if (it.kind === "head") {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(FALCON_SPRITE, p.x - size / 2, p.y - size / 2, size, size);
+      } else {
+        // Exhaust glow for each trail segment, flickering and shrinking toward the tail
+        const r = p.s * 0.5 * (1 - 0.5 * it.i / s3.trail.length);
+        const flicker = 0.85 + 0.15 * Math.sin(t * 18 + it.i * 1.3);
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        g.addColorStop(0, `rgba(255, 250, 200, ${(0.95 * flicker).toFixed(3)})`);
+        g.addColorStop(0.5, `rgba(255, 140, 40, ${(0.7 * flicker).toFixed(3)})`);
+        g.addColorStop(1, "rgba(255, 60, 20, 0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
 
   // One flickering exhaust flame along +x, starting at the origin. Three
@@ -541,6 +995,11 @@
 
   function draw(now) {
     drawSpace(now);
+    if (mode === "3d") {
+      draw3D(now);
+      drawStateOverlay();
+      return;
+    }
 
     ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
     ctx.lineWidth = 1;
@@ -564,6 +1023,11 @@
     for (let i = snake.length - 1; i >= 1; i--) drawExhaust(i, t);
     drawFalconHead(snake[0], t);
 
+    drawStateOverlay();
+  }
+
+  function drawStateOverlay() {
+    if (demo) return;
     if (gameOver) {
       drawOverlay("Game over", "Press Enter or Space to play again");
     } else if (!running && !food) {
@@ -579,6 +1043,24 @@
   }
 
   window.addEventListener("keydown", (e) => {
+    // Any key press counts as a user gesture, so audio can start here.
+    ensureAudio();
+
+    if (e.code === "KeyM") {
+      toggleMute();
+      return;
+    }
+
+    if (e.code === "Digit2" || e.code === "Digit3") {
+      setMode(e.code === "Digit3" ? "3d" : "2d");
+      return;
+    }
+
+    if (e.code === "Digit1") {
+      startGame();
+      return;
+    }
+
     if (e.code === "Enter" || e.code === "Space") {
       if (!running) {
         e.preventDefault();
@@ -595,15 +1077,26 @@
     const name = KEY_TO_DIR[e.code];
     if (!name) return;
     e.preventDefault();
-    if (paused) return;
+    if (paused || demo) return;
+    if (mode === "3d") {
+      if (running) steer3(name, true);
+      return;
+    }
     // Compare against the direction the snake is moving now, not the queued
     // one, so two quick presses cannot reverse it within a single tick.
     if (name === OPPOSITE[dir]) return;
     nextDir = name;
   });
 
+  window.addEventListener("keyup", (e) => {
+    const name = KEY_TO_DIR[e.code];
+    if (name && mode === "3d" && s3 && !demo) steer3(name, false);
+  });
+
   window.addEventListener("resize", fitBoard);
+  document.getElementById("start").addEventListener("click", startGame);
   fitBoard();
+  updateTitle();
   reset();
   requestAnimationFrame(frame);
 </script>
