@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound Clock</title>
+<style>
+  :root {
+    --bg: #f4f6f1;
+    --card: #ffffff;
+    --face: #fbfcf9;
+    --text: #1d2a1f;
+    --muted: #5d6b5a;
+    --line: #d7ded3;
+    --accent: #2f7d5b;
+    --accent-ink: #ffffff;
+    --hand: #1d2a1f;
+    --sec: #c8553d;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141a16;
+      --card: #1c241f;
+      --face: #18201b;
+      --text: #e5ece3;
+      --muted: #9aa897;
+      --line: #2e3a32;
+      --accent: #6fbf93;
+      --accent-ink: #0f1612;
+      --hand: #e5ece3;
+      --sec: #e07a5f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141a16;
+    --card: #1c241f;
+    --face: #18201b;
+    --text: #e5ece3;
+    --muted: #9aa897;
+    --line: #2e3a32;
+    --accent: #6fbf93;
+    --accent-ink: #0f1612;
+    --hand: #e5ece3;
+    --sec: #e07a5f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.4rem; margin: 8px 0; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    font: inherit; padding: 8px 12px; min-height: 40px;
+    border-radius: 10px; border: 1px solid var(--line);
+    background: var(--card); color: var(--text); cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .btn.small { min-height: 36px; padding: 6px 10px; font-size: .9rem; }
+  .btn:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .face-wrap { display: grid; place-items: center; margin: 12px 0 8px; min-height: 300px; }
+  #analog { width: min(80vw, 340px); height: auto; }
+  #analog .face { fill: var(--face); stroke: var(--line); stroke-width: 2; }
+  #analog .major { stroke: var(--text); }
+  #analog .minor { stroke: var(--muted); }
+  #analog .num { fill: var(--text); font-size: 13px; font-family: inherit; }
+  #analog .hH { stroke: var(--hand); }
+  #analog .hM { stroke: var(--hand); }
+  #analog .hS { stroke: var(--sec); }
+  #analog .pin { fill: var(--sec); }
+
+  .digital {
+    font-size: clamp(48px, 16vw, 112px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600; letter-spacing: -0.02em; line-height: 1;
+  }
+  .date { color: var(--muted); margin-top: 8px; }
+  .status { text-align: center; margin: 8px 0 4px; }
+  .hint { text-align: center; color: var(--muted); font-size: .9rem; min-height: 1.2em; margin: 0; }
+
+  .panel {
+    margin-top: 20px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+  }
+  .group {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px 16px; margin-bottom: 16px;
+  }
+  .group label { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; color: var(--muted); }
+  .group label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--text); }
+  select {
+    font: inherit; padding: 8px; border-radius: 8px; min-width: 0;
+    border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+  .rows { display: grid; gap: 8px; }
+  .row {
+    display: grid; grid-template-columns: 5.2em minmax(0, 1fr) auto;
+    gap: 8px; align-items: center;
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+  }
+  .row select { width: 100%; }
+  .hl { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+  @media (max-width: 420px) {
+    .row { grid-template-columns: 5.8em minmax(0, 1fr); }
+    .row .acts { grid-column: 1 / -1; justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <h1>Sound Clock</h1>
+    <div class="actions">
+      <button id="soundBtn" class="btn primary" type="button">Turn on sound</button>
+      <button id="settingsBtn" class="btn" type="button" aria-expanded="false" aria-controls="settings">Settings</button>
+    </div>
+  </header>
+
+  <section class="face-wrap">
+    <svg id="analog" viewBox="-100 -100 200 200" role="img" aria-label="Analog clock"></svg>
+    <div>
+      <div id="digital" class="digital" hidden></div>
+      <div id="date" class="date"></div>
+    </div>
+  </section>
+
+  <p id="status" class="status"></p>
+  <p id="hint" class="hint"></p>
+
+  <section id="settings" class="panel" hidden>
+    <div class="group">
+      <label>Face
+        <select id="face">
+          <option value="analog">Analog</option>
+          <option value="digital">Digital</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="h24"> 24-hour time</label>
+      <label class="check"><input type="checkbox" id="chime"> Play each hour's sound on the hour</label>
+      <label>Ticking
+        <select id="tick">
+          <option value="off">Off</option>
+          <option value="click">Simple click</option>
+          <option value="match">Match each hour's sound</option>
+        </select>
+      </label>
+      <label>Volume
+        <input type="range" id="volume" min="0" max="1" step="0.05">
+      </label>
+      <label>Set every hour to
+        <select id="setAll"></select>
+      </label>
+    </div>
+    <div id="rows" class="rows"></div>
+  </section>
+</main>
+
+<input type="file" id="file" accept="audio/*" hidden>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Sound presets (synthesized with Web Audio, no files needed) ----------
+  const PRESET_NAMES = {
+    silence: 'Silence',
+    songbird: 'Songbird',
+    warbler: 'Warbler',
+    cat: 'Cat meow',
+    car: 'Car horn',
+    chime: 'Bell chime'
+  };
+  const CYCLE = ['songbird', 'warbler', 'cat', 'car', 'chime'];
+
+  // ---------- Settings ----------
+  const KEY = 'soundclock.v1';
+  const defaults = () => ({
+    face: 'analog',
+    h24: false,
+    chime: true,
+    tick: 'click',
+    volume: 0.8,
+    // Quiet overnight by default; daytime hours cycle through the presets.
+    slots: Array.from({ length: 24 }, (_, h) =>
+      (h >= 7 && h <= 21) ? CYCLE[(h - 7) % CYCLE.length] : 'silence'),
+    customNames: {}
+  });
+
+  let settings = defaults();
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved) {
+      settings = { ...settings, ...saved };
+      if (!Array.isArray(settings.slots) || settings.slots.length !== 24) settings.slots = defaults().slots;
+      if (!settings.customNames) settings.customNames = {};
+    }
+  } catch (e) { /* ignore corrupt storage */ }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch (e) { /* private mode etc. */ }
+  }
+
+  // ---------- Custom sound files live in IndexedDB (they can be large) ----------
+  const DB = {
+    open() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('soundclock', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('sounds');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    },
+    async run(mode, fn) {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('sounds', mode);
+        const req = fn(tx.objectStore('sounds'));
+        tx.oncomplete = () => resolve(req && req.result);
+        tx.onerror = () => reject(tx.error);
+      });
+    },
+    get(hour) { return this.run('readonly', s => s.get(hour)); },
+    put(hour, blob) { return this.run('readwrite', s => s.put(blob, hour)); },
+    del(hour) { return this.run('readwrite', s => s.delete(hour)); }
+  };
+  const customBlobs = new Map(); // hour -> Blob
+  const bufferCache = new Map(); // hour -> decoded AudioBuffer
+
+  // ---------- Audio engine ----------
+  let ctx = null, master = null, soundOn = false;
+
+  function ensureAudio() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    master.gain.value = settings.volume;
+    return ctx;
+  }
+
+  // One oscillator voice with an amplitude envelope.
+  function tone({ type = 'sine', f0, f1 = f0, t, dur, vol, attack = 0.01, release = 0.05 }) {
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(vol, 0.0002), t + attack);
+    g.gain.setValueAtTime(Math.max(vol, 0.0002), t + Math.max(attack, dur - release));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  }
+
+  const PRESETS = {
+    songbird: {
+      // Short rising-and-falling chirps in pairs.
+      play(t, vol, short) {
+        const n = short ? 1 : 3 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < n; i++) {
+          const s = t + i * 0.19;
+          const base = 2600 + Math.random() * 900;
+          tone({ f0: base, f1: base * 1.35, t: s, dur: 0.09, vol: vol * 0.35, attack: 0.008, release: 0.05 });
+          tone({ f0: base * 1.35, f1: base * 1.1, t: s + 0.1, dur: 0.07, vol: vol * 0.3, attack: 0.008, release: 0.05 });
+        }
+      }
+    },
+    warbler: {
+      // Fast trill: the pitch alternates and the volume gates on and off.
+      play(t, vol, short) {
+        const dur = short ? 0.14 : 0.9;
+        const step = 0.045;
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        const g = ctx.createGain();
+        g.gain.value = 0;
+        osc.connect(g);
+        g.connect(master);
+        for (let k = 0, s = t; s < t + dur; k++, s = t + k * step) {
+          osc.frequency.setValueAtTime(k % 2 ? 3150 : 2650, s);
+          g.gain.setValueAtTime(vol * 0.35, s);
+          g.gain.linearRampToValueAtTime(0.0001, s + step * 0.5);
+        }
+        osc.start(t);
+        osc.stop(t + dur + 0.02);
+      }
+    },
+    cat: {
+      // Sawtooth with vibrato and a sweeping band-pass filter that sounds like "mee-ow".
+      play(t, vol, short) {
+        const d = short ? 0.22 : 0.8;
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(480, t);
+        osc.frequency.linearRampToValueAtTime(760, t + d * 0.4);
+        osc.frequency.linearRampToValueAtTime(430, t + d);
+
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 5;
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 12;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.Q.value = 5;
+        bp.frequency.setValueAtTime(900, t);
+        bp.frequency.linearRampToValueAtTime(1700, t + d * 0.35);
+        bp.frequency.linearRampToValueAtTime(700, t + d);
+
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol * 0.4, t + d * 0.15);
+        g.gain.setValueAtTime(vol * 0.4, t + d * 0.7);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+
+        osc.connect(bp); bp.connect(g); g.connect(master);
+        osc.start(t); lfo.start(t);
+        osc.stop(t + d + 0.05); lfo.stop(t + d + 0.05);
+      }
+    },
+    car: {
+      // Two detuned sawtooths through a low-pass filter: a two-tone car horn.
+      play(t, vol, short) {
+        const blasts = short ? [0] : [0, 0.75];
+        const d = short ? 0.14 : 0.5;
+        for (const b of blasts) {
+          const s = t + b;
+          const lp = ctx.createBiquadFilter();
+          lp.type = 'lowpass';
+          lp.frequency.value = 1800;
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0.0001, s);
+          g.gain.exponentialRampToValueAtTime(vol * 0.2, s + 0.01);
+          g.gain.setValueAtTime(vol * 0.2, s + d - 0.05);
+          g.gain.exponentialRampToValueAtTime(0.0001, s + d);
+          lp.connect(g); g.connect(master);
+          for (const f of [370, 466]) {
+            const o = ctx.createOscillator();
+            o.type = 'sawtooth';
+            o.frequency.value = f;
+            o.connect(lp);
+            o.start(s);
+            o.stop(s + d + 0.02);
+          }
+        }
+      }
+    },
+    chime: {
+      // Bell: inharmonic-ish partials with long decay.
+      play(t, vol, short) {
+        const dur = short ? 0.5 : 2.4;
+        const partials = [[523.25, 1], [1046.5, 0.5], [1568, 0.25], [2093, 0.12]];
+        for (const [f, w] of partials) {
+          tone({ f0: f, t, dur, vol: vol * 0.4 * w, attack: 0.004, release: short ? 0.4 : 1.7 });
+        }
+      }
+    }
+  };
+
+  function click(t) {
+    tone({ f0: 1400, t, dur: 0.03, vol: 0.25, attack: 0.002, release: 0.02 });
+  }
+
+  function playCustom(hour, t, vol) {
+    const c = ctx;
+    const start = (buf) => {
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const g = c.createGain();
+      g.gain.value = vol;
+      src.connect(g);
+      g.connect(master);
+      src.start(Math.max(t, c.currentTime));
+    };
+    if (bufferCache.has(hour)) return start(bufferCache.get(hour));
+    const blob = customBlobs.get(hour);
+    if (!blob) return;
+    blob.arrayBuffer()
+      .then(data => c.decodeAudioData(data))
+      .then(buf => { bufferCache.set(hour, buf); start(buf); })
+      .catch(() => showMsg('Could not play that file. Try a different format (MP3, WAV, M4A, OGG).'));
+  }
+
+  // Plays the sound assigned to an hour (or a preset key directly).
+  function playKey(key, hour, { when, short = false, vol = 1 } = {}) {
+    const c = ensureAudio();
+    if (!c) return;
+    const t = when ?? c.currentTime + 0.02;
+    if (key === 'custom') return playCustom(hour, t, vol);
+    const p = PRESETS[key];
+    if (p) p.play(t, vol, short);
+  }
+
+  function playTick(hour) {
+    if (settings.tick === 'off' || !ctx) return;
+    const t = ctx.currentTime + 0.01;
+    if (settings.tick === 'match') {
+      const key = settings.slots[hour];
+      if (key === 'silence') return;
+      if (PRESETS[key]) return PRESETS[key].play(t, 0.4, true);
+    }
+    click(t);
+  }
+
+  // ---------- Scheduler: fires once per second, on the hour triggers the chime ----------
+  let lastKey = '';
+  function clockTick() {
+    if (!soundOn || !ctx) return;
+    const now = new Date();
+    const key = now.toDateString() + '|' + now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+    if (key === lastKey) return;
+    lastKey = key;
+    const top = now.getMinutes() === 0 && now.getSeconds() === 0;
+    if (top && settings.chime) {
+      playKey(settings.slots[now.getHours()], now.getHours());
+    } else {
+      playTick(now.getHours());
+    }
+  }
+  setInterval(clockTick, 100);
+
+  // ---------- Formatting ----------
+  const pad = n => String(n).padStart(2, '0');
+  function fmtTime(d, withSec) {
+    const sec = withSec ? ':' + pad(d.getSeconds()) : '';
+    if (settings.h24) return pad(d.getHours()) + ':' + pad(d.getMinutes()) + sec;
+    const h = d.getHours() % 12 || 12;
+    return h + ':' + pad(d.getMinutes()) + sec + (d.getHours() < 12 ? ' AM' : ' PM');
+  }
+  function fmtHour(h, h24 = settings.h24) {
+    if (h24) return pad(h) + ':00';
+    return (h % 12 || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM');
+  }
+  function slotLabel(h) {
+    const key = settings.slots[h];
+    if (key === 'custom') return settings.customNames[h] || 'Custom file';
+    return PRESET_NAMES[key] || 'Silence';
+  }
+
+  // ---------- Analog face ----------
+  const svg = document.getElementById('analog');
+  const NUM_R = 76;
+  let faceHTML = '<circle r="96" class="face"/>';
+  for (let i = 0; i < 60; i++) {
+    const major = i % 5 === 0;
+    faceHTML += `<line class="${major ? 'major' : 'minor'}" x1="0" y1="-96" x2="0" y2="${major ? -86 : -92}"
+      transform="rotate(${i * 6})" stroke-width="${major ? 2.5 : 0.8}"/>`;
+  }
+  for (let n = 1; n <= 12; n++) {
+    const a = n * 30 * Math.PI / 180;
+    faceHTML += `<text class="num" x="${(NUM_R * Math.sin(a)).toFixed(2)}" y="${(-NUM_R * Math.cos(a)).toFixed(2)}"
+      text-anchor="middle" dominant-baseline="central">${n}</text>`;
+  }
+  faceHTML += `
+    <line id="hH" class="hH" x1="0" y1="10" x2="0" y2="-52" stroke-width="6" stroke-linecap="round"/>
+    <line id="hM" class="hM" x1="0" y1="12" x2="0" y2="-78" stroke-width="4" stroke-linecap="round"/>
+    <line id="hS" class="hS" x1="0" y1="16" x2="0" y2="-86" stroke-width="1.5" stroke-linecap="round"/>
+    <circle r="3.5" class="pin"/>`;
+  svg.innerHTML = faceHTML;
+  const hH = document.getElementById('hH');
+  const hM = document.getElementById('hM');
+  const hS = document.getElementById('hS');
+
+  function setHands(d) {
+    const sec = d.getSeconds() + d.getMilliseconds() / 1000;
+    // With ticking on, the second hand jumps; otherwise it sweeps smoothly.
+    const secAngle = settings.tick === 'off' ? sec : Math.floor(sec);
+    const min = d.getMinutes() + sec / 60;
+    const hr = (d.getHours() % 12) + min / 60;
+    hH.setAttribute('transform', `rotate(${hr * 30})`);
+    hM.setAttribute('transform', `rotate(${min * 6})`);
+    hS.setAttribute('transform', `rotate(${secAngle * 6})`);
+  }
+
+  // ---------- Display loop ----------
+  const digitalEl = document.getElementById('digital');
+  const dateEl = document.getElementById('date');
+  const statusEl = document.getElementById('status');
+  let lastSec = -1;
+  let lastDay = '';
+
+  function updateStatus(d) {
+    const now = 'Now ' + fmtTime(d, false);
+    if (!settings.chime) {
+      statusEl.textContent = now + ' · hour sounds are off';
+      return;
+    }
+    const nh = (d.getHours() + 1) % 24;
+    statusEl.textContent = `${now} · next sound at ${fmtHour(nh)}: ${slotLabel(nh)}`;
+  }
+
+  function applyFace() {
+    const digital = settings.face === 'digital';
+    svg.hidden = digital;
+    digitalEl.hidden = !digital;
+    lastSec = -1;
+  }
+
+  function render() {
+    const d = new Date();
+    if (settings.face === 'analog') setHands(d);
+    else if (d.getSeconds() !== lastSec) digitalEl.textContent = fmtTime(d, true);
+    if (d.getSeconds() !== lastSec) {
+      lastSec = d.getSeconds();
+      updateStatus(d);
+    }
+    const day = d.toDateString();
+    if (day !== lastDay) {
+      lastDay = day;
+      dateEl.textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+    requestAnimationFrame(render);
+  }
+
+  // ---------- Settings UI ----------
+  const $ = id => document.getElementById(id);
+  const hintEl = $('hint');
+  const soundBtn = $('soundBtn');
+  const settingsBtn = $('settingsBtn');
+  const panel = $('settings');
+  const fileInput = $('file');
+  let pendingHour = null;
+
+  function showMsg(text) { hintEl.textContent = text; }
+
+  function updateSoundBtn() {
+    soundBtn.textContent = soundOn ? 'Sound on ✓' : 'Turn on sound';
+    soundBtn.classList.toggle('primary', !soundOn);
+    if (!soundOn) showMsg('Tap "Turn on sound" first. Browsers only allow audio after a tap.');
+    else showMsg('');
+  }
+
+  function mkBtn(text, onClick, extra = '') {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn ' + extra;
+    b.textContent = text;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function renderRows() {
+    const wrap = $('rows');
+    wrap.textContent = '';
+    for (let h = 0; h < 24; h++) {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const label = document.createElement('span');
+      label.className = 'hl';
+      label.textContent = fmtHour(h);
+
+      const sel = document.createElement('select');
+      sel.setAttribute('aria-label', 'Sound for ' + fmtHour(h));
+      for (const k of Object.keys(PRESET_NAMES)) sel.add(new Option(PRESET_NAMES[k], k));
+      if (customBlobs.has(h) || settings.slots[h] === 'custom') {
+        sel.add(new Option('Custom: ' + (settings.customNames[h] || 'file'), 'custom'));
+      }
+      sel.value = settings.slots[h];
+      sel.addEventListener('change', () => { settings.slots[h] = sel.value; save(); renderStatusNow(); });
+
+      const acts = document.createElement('div');
+      acts.className = 'acts';
+      acts.append(
+        mkBtn('Test', () => { ensureAudio(); playKey(settings.slots[h], h); }, 'small'),
+        mkBtn(settings.slots[h] === 'custom' ? 'Replace file' : 'Upload…', () => {
+          pendingHour = h;
+          fileInput.value = '';
+          fileInput.click();
+        }, 'small')
+      );
+      if (customBlobs.has(h)) acts.append(mkBtn('Remove file', () => removeCustom(h), 'small'));
+
+      row.append(label, sel, acts);
+      wrap.append(row);
+    }
+  }
+
+  function renderStatusNow() { updateStatus(new Date()); }
+
+  async function removeCustom(h) {
+    try { await DB.del(h); } catch (e) { /* ignore */ }
+    customBlobs.delete(h);
+    bufferCache.delete(h);
+    delete settings.customNames[h];
+    if (settings.slots[h] === 'custom') settings.slots[h] = 'silence';
+    save();
+    renderRows();
+    renderStatusNow();
+  }
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    const h = pendingHour;
+    if (!file || h === null) return;
+    try {
+      await DB.put(h, file);
+      customBlobs.set(h, file);
+      bufferCache.delete(h);
+      settings.customNames[h] = file.name;
+      settings.slots[h] = 'custom';
+      save();
+      showMsg(`Saved "${file.name}" for ${fmtHour(h)}.`);
+    } catch (e) {
+      showMsg('Could not store that file in this browser.');
+    }
+    renderRows();
+    renderStatusNow();
+  });
+
+  // Wire up the top-level controls.
+  $('face').value = settings.face;
+  $('face').addEventListener('change', e => { settings.face = e.target.value; save(); applyFace(); });
+  $('h24').checked = settings.h24;
+  $('h24').addEventListener('change', e => { settings.h24 = e.target.checked; save(); renderRows(); renderStatusNow(); });
+  $('chime').checked = settings.chime;
+  $('chime').addEventListener('change', e => { settings.chime = e.target.checked; save(); renderStatusNow(); });
+  $('tick').value = settings.tick;
+  $('tick').addEventListener('change', e => { settings.tick = e.target.value; save(); });
+  $('volume').value = settings.volume;
+  $('volume').addEventListener('input', e => {
+    settings.volume = Number(e.target.value);
+    if (master) master.gain.value = settings.volume;
+    save();
+  });
+
+  const setAll = $('setAll');
+  setAll.add(new Option('Choose…', ''));
+  for (const k of Object.keys(PRESET_NAMES)) setAll.add(new Option(PRESET_NAMES[k], k));
+  setAll.addEventListener('change', () => {
+    if (!setAll.value) return;
+    settings.slots = settings.slots.map(() => setAll.value);
+    setAll.value = '';
+    save();
+    renderRows();
+    renderStatusNow();
+  });
+
+  settingsBtn.addEventListener('click', () => {
+    const open = panel.hidden;
+    panel.hidden = !open;
+    settingsBtn.setAttribute('aria-expanded', String(open));
+  });
+
+  soundBtn.addEventListener('click', () => {
+    if (!soundOn) {
+      const c = ensureAudio();
+      if (!c) { showMsg('This browser does not support Web Audio.'); return; }
+      soundOn = true;
+      // Pre-decode any custom files so the chime fires on time.
+      for (const [h, blob] of customBlobs) {
+        if (!bufferCache.has(h)) {
+          blob.arrayBuffer().then(d => c.decodeAudioData(d))
+            .then(buf => bufferCache.set(h, buf)).catch(() => {});
+        }
+      }
+    } else {
+      soundOn = false;
+    }
+    updateSoundBtn();
+  });
+
+  // ---------- Startup ----------
+  (async () => {
+    // Load saved custom files.
+    await Promise.all(Array.from({ length: 24 }, (_, h) =>
+      DB.get(h).then(b => { if (b) customBlobs.set(h, b); }).catch(() => {})));
+    for (let h = 0; h < 24; h++) {
+      if (settings.slots[h] === 'custom' && !customBlobs.has(h)) settings.slots[h] = 'silence';
+    }
+    save();
+    renderRows();
+    applyFace();
+    updateSoundBtn();
+    requestAnimationFrame(render);
+  })();
+})();
+</script>
+</body>
+</html>
